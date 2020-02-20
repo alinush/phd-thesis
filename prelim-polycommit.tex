@@ -1,0 +1,182 @@
+Most of the results in this thesis are based on \textit{polynomial commitment schemes}~\cite{Feldman87,Pedersen1991NonInteractive,KZG10a,BFS19,ZXZS19}.
+In \cref{s:aads}, we use constant-sized polynomial commitments~\cite{KZG10a} to build various append-only authenticated data structures.
+In \cref{s:threshcrypto}, we use the same commitments to scale VSS and DKG protocols.
+
+\subsection{Definitions}
+In this section, we formally (re)define polynomial commitment schemes over $\Fp[X]$.
+Our definitions resemble the ones from previous work~\cite{KZG10a}, except for small modifications.
+
+\subsubsection{Polynomial Commitments API}
+\label{s:prelim:polycommit:api}
+A \textit{polynomial commitment scheme} is a tuple of six algorithms:
+\\
+
+\api $\polysetup(1^\lambda, \ell)\rightarrow \pp$.
+Generates public parameters \pp for the scheme.
+$\lambda$ is a security parameter.
+Some schemes require an \textit{upper bound} $\ell$ on the degree of the committed polynomials.
+In other words, such schemes can commit only to polynomials $\phi$ of $\deg(\phi)\le \ell$.
+
+\api $\polycommit(\pp, \phi)\rightarrow c, \decominfo$.
+Returns a commitment $c$ to the polynomial $\phi$ and \textit{decommitment information} \decominfo.
+For example, for information-theoretic hiding schemes, \decominfo will contain the randomness of the commitment.
+For other schemes, \decominfo could be empty.
+
+\api $\polyverifypoly(\pp, c, \phi, \decominfo)\rightarrow \{T,F\}$.
+Checks if $c$ is a commitment to the polynomial $\phi$ created with decommitment information \decominfo.
+
+\api $\polycreatewitness(\pp, \phi, i, \decominfo)\rightarrow \pi$.
+Computes an \textit{evaluation proof} $\pi$ attesting to the correct evaluation of $\phi(x)$ at $x=i$.
+Some schemes will require the decommitment information \decominfo.
+
+\api $\polyverifyeval(\pp, c, i, v, \pi)\rightarrow \{T,F\}$.
+If $\phi$ is the polynomial committed in $c$, then verifies that $\phi(i)=v$ via the evaluation proof $\pi$.
+
+\subsubsection{Correctness and Security}
+\label{s:prelim:polycommit:correctness-and-security}
+
+\begin{definition}[Polynomial Commitment Scheme]
+    \label{def:polycommit}
+    (\polysetup, \polycommit, \polyverifypoly, \polycreatewitness, \polyverifyeval) is a secure \textit{polynomial commitment scheme} with \textit{computational hiding} if
+    $\forall$ upper-bounds $\ell=\poly(\lambda)$
+    it satisfies the following properties:
+\end{definition}
+
+\begin{definition}[Opening Correctness]
+$\forall \phi \in \Fp[X]\ \text{with}\ \deg{\phi}\le \ell$:
+\begin{align*}
+\Pr \left[ \begin{array}{c}
+    \pp \leftarrow \polysetup(1^\lambda, \ell),\\
+    (c, \decominfo) \leftarrow \polycommit(\pp, \phi) :\\
+    \polyverifypoly(\pp, c, \phi, \decominfo) = T
+\end{array} \right] \ge 1 - \negl(\lambda)
+\end{align*}
+\end{definition}
+
+\noindent \textit{Observation:}
+Informally, this say a commitment $c$ to $\phi$ should verify successfully against $\phi$.
+
+\begin{definition}[Evaluation Correctness]
+$\forall \phi \in \Fp[X]\ \text{with}\ \deg{\phi}\le \ell, \forall i \in \Fp$:
+\begin{align*}
+\Pr \left[ \begin{array}{c}
+    \pp \leftarrow \polysetup(1^\lambda, \ell),\\
+    (c, \decominfo) \leftarrow \polycommit(\pp, \phi)\\
+    \pi \leftarrow \polycreatewitness(\pp, \phi, i, \decominfo):\\
+    \polyverifyeval(\pp, c, i, \phi(i), \pi) = T
+\end{array} \right] \ge 1 - \negl(\lambda)
+\end{align*}
+\end{definition}
+
+\noindent \textit{Observation:}
+Informally, this says an evaluation proof for $\phi(i)$ must verify successfully against a commitment to $\phi$.
+
+\begin{definition}[Polynomial Binding]
+\label{def:polycommit:poly-binding}
+$\forall$ adversaries ${\Adv}$ running in time $\poly(\lambda)$:
+\begin{align*}
+\Pr \left[ \begin{array}{c}
+    \pp \leftarrow \polysetup(1^\lambda, \ell),\\
+    (c,\phi,\phi',\decominfo,\decominfo') \leftarrow \Adv(1^\lambda, \pp):\\
+    {\polyverifypoly(\pp, c, \phi, \decominfo) = T } \wedge {}\\
+    {\polyverifypoly(\pp, c, \phi', \decominfo') = T } \wedge {}\\
+    {\phi \ne \phi'}
+\end{array} \right] \le \negl(\lambda)
+\end{align*}
+\end{definition}
+% NOTE: Removed \wedge {\decominfo \ne \decominfo'} restriction because we want to also prevent attacks where (somehow) \decominfo = \decominfo' but \phi != \phi':
+%  - For Pedersen & PolyCommit_Ped, you cannot open to the same \phi with different decommitment information (nor viceversa)
+%  - For Feldman-style commitments, \decominfo is \bot
+
+\noindent \textit{Observation:}
+This prevents an adversary from opening the same commitment $c$ to two different polynomials $\phi$ and $\phi'$.
+
+% Note: Kate does not include upper bound in his definitions (not in ASIACRYPT'10, nor its eprint, nor his thesis).
+\begin{definition}[Evaluation Binding]
+\label{def:polycommit:eval-binding}
+$\forall$ adversaries ${\Adv}$ running in time $\poly(\lambda)$:
+\begin{align*}
+%\small
+\Pr \left[ \begin{array}{c}
+    \pp \leftarrow \polysetup(1^\lambda, \ell),\\
+    (c, i, y, y', \pi, \pi') \leftarrow {\Adv}(1^\lambda, \pp):\\
+    \polyverifyeval(\pp,c,i,y, \pi) = T \wedge {}\\
+    \polyverifyeval(\pp,c,i,y', \pi') = T \wedge {}\\
+    y \ne y'
+\end{array} \right] \le \negl(\lambda)
+\end{align*}
+\end{definition}
+
+\noindent \textit{Observation:}
+This definition prevents an adversary from producing contradicting proofs $\pi$ and $\pi'$ that verify against a commitment $c$, attesting to different evaluations $\phi(i)=y$ and $\phi(i)=y'$ with $y'\ne y$, where $\phi(x)$ is the polynomial committed in $c$.
+
+% Previous 'intuitive' def:
+% Given public parameters $\pp$ randomly generated via $\polysetup(1^\lambda, d)$, $c\in \Group$, $\phi \in_R \Fp[X]$ of degree $d$ and $(x_i, \phi(x_i), \pi_i)_{i=1}^d$ for distinct $x_i$'s such that \polyverifyeval$(\pp, c, x_i, \phi(x_i), \pi_i) = 1, \forall i\in[d]$, no adversary $\Adv$ can output $\phi(\hat{x})$ for any $\hat{x}$ where $\hat{x} \ne x_i, \forall i\in[d]$, except with negligible probability in $\lambda$.
+\begin{definition}[Computational Hiding]
+\label{def:polycommit:comp-hiding}
+$\forall$ adversaries $\Adv=(\Adv_0,\Adv_1)$ running in time $\poly(\lambda)$:
+\begin{align*}
+\Pr \left[ \begin{array}{c}
+    \pp \leftarrow \polysetup(1^\lambda, \ell), 
+    \phi \in_R \Fp[X]\ \text{with}\ \deg{\phi}\le \ell,\\
+    (c, \decominfo) \leftarrow \polycommit(\pp, \phi),\\
+    % x_i's should be given by the adversary
+    \left(\mathsf{state}, (x_i)_{i\in [\deg{\phi}]}\right) \leftarrow \Adv_0(1^\lambda, \pp, c, \deg{\phi})\ \text{with distinct}\ x_i\text{'s},\\
+    \left( \pi_i \leftarrow \polycreatewitness(\pp, \phi, x_i, \decominfo) \right)_{i\in[\deg{\phi}]},\\
+    (\hat{x}, \hat{y}) \leftarrow \Adv_1\left(1^\lambda, \mathsf{state}, \pp, c, (x_i, \phi(x_i), \pi_i)_{i\in[\deg{\phi}]}\right):\\
+    {\hat{y} = \phi(\hat{x})} \wedge {\hat{x} \notin \{x_i\}_{i\in[\deg{\phi}]}}
+\end{array} \right] \le \negl(\lambda)
+\end{align*}
+\end{definition}
+
+\noindent \textit{Observation:}
+This definition prevents an adversary who gets $\deg{\phi}$ evaluations $(\phi(x_i))_{i\in[\deg{\phi}]}$ of a polynomial $\phi$ from learning another evaluation $\phi(\hat{x})$ at a different point $\hat{x} \ne x_i, \forall i \in[\deg{\phi}]$ (and thus from learning $\phi$ itself).
+
+\subsection{Kate-Zaverucha-Goldberg (KZG) Commitments}
+\label{s:prelim:polycommit:kzg}
+
+Kate, Zaverucha and Goldberg proposed a constant-sized polynomial commitment scheme based on the $\ell$-S(B)DH assumption (see \cref{def:q-sdh,def:q-sbdh}).
+Importantly, evaluation proofs are constant-sized and constant-time to verify; they do not depend in any way on the degree of the committed polynomial.
+In contrast, both Pedersen-style~\cite{Pedersen1991NonInteractive} and Feldman-style~\cite{Feldman87} commitments are linearly-sized in the degree of the committed polynomial and evaluation proofs take linear time to verify (although the proof size is zero).
+To provide succinctness, KZG requires $\ell$-SDH~\cite{BB08} public parameters $\PPsdh_\ell(g;\tau)=(g^{\tau^i})_{i\in[0,\ell]}$ where $\tau$ denotes a trapdoor.
+(These parameters are computed via a \textit{trusted setup}; see \cref{s:prelim:trusted-setup}.)
+Their scheme is computationally-hiding (see \cref{def:polycommit:comp-hiding}) under the discrete log assumption and computationally-binding (see \cref{def:polycommit:poly-binding}) under $\ell$-SDH~\cite{KZG10a}.
+
+Unlike Pedersen commitments~\cite{Pedersen1991NonInteractive}, KZG can only commit to polynomials of degree $d\le \ell$.
+Let $\phi$ denote a polynomial of degree $d$ with coefficients $c_0, c_1, \dots, c_d$ in $\Fp$.
+A KZG commitment to $\phi$ is a single group element $C = \prod_{i=0}^d {\left(g^{\tau^i}\right)^{c_i}} = g^{\sum_{i=0}^d c_i \tau^i} = g^{\phi(\tau)}$.
+Note that committing to $\phi$ takes $\Theta(d)$ time.
+To compute an \textit{evaluation proof} that $\phi(a) = y$, KZG leverages the polynomial remainder theorem which says
+\begin{align}
+    \phi(a) = y \Leftrightarrow \exists q(\cdot), \phi(x) - y = q(x)(x-a)
+    \label{eq:poly-rem-thm}
+\end{align}
+The proof is just a KZG commitment to $q$: a single group element $\pi=g^{q(\tau)}$.
+Computing the proof takes $\Theta(d)$ time.
+To verify $\pi$, one checks (in constant time) if 
+\begin{align*}
+e(C / g^y, g)            &\stackrel{?}{=} e(\pi, g^{\tau}/g^a) \Leftrightarrow\\
+e(g^{\phi(\tau) - y}, g) &\stackrel{?}{=} e(g^{q(\tau)},g^{\tau-a})\Leftrightarrow\\
+e(g,g)^{\phi(\tau)-y}    &\stackrel{?}{=} e(g,g)^{q(\tau)(\tau-a)} \Leftrightarrow\\
+{\phi(\tau)-y}           &\stackrel{?}{=} q(\tau)(\tau-a)
+\end{align*}
+
+\subsubsection{Batch proofs and homomorphism}
+\label{s:prelim:polycommit:kzg:batch}
+\label{s:prelim:polycommit:kzg:homomorphism}
+Given a set of points $S$ and their evaluations $\{\phi(i)\}_{i\in S}$, KZG can prove all evaluations with \textit{one} constant-sized \textit{batch proof} rather than $|S|$ individual proofs~\cite{KZG10a}.
+The prover computes an \textit{accumulator polynomial} $a(x)=\prod_{i\in S} (x-i)$ in $\Theta(|S|\log^2{|S|})$ time and computes $\phi/a$ in $\Theta(d\log{d})$ time, obtaining a quotient $q$ and remainder $r$.
+The batch proof is $\pi=g^{q(\tau)}$.
+
+To verify $\pi$ against $\{\phi(i)\}_{i\in S}$ and $C$, the verifier first computes $a$ from $S$ and interpolates $r$ such that $r(i)=\phi(i), \forall i \in S$ in $\Theta(|S|\log^2{|S|})$ time.
+Next, he computes $g^{a(\tau)}$ and $g^{r(\tau)}$ commitments.
+Finally, he checks if $e(C / g^{r(\tau)}, g) = e(g^{q(\tau)}, g^{a(\tau)})$.
+We stress that batch proofs are only useful when $|S| \le d$.
+Otherwise, if $|S| > d$, we can interpolate $\phi$ directly from the evaluations, which makes verifying any evaluation trivial.
+
+Finally, KZG proofs have a \textit{homomorphic} property.
+Suppose we have two polynomials $\phi_1, \phi_2$ with commitments $C_1,C_2$ and two proofs $\pi_1,\pi_2$ for $\phi_1(a)$ and $\phi_2(a)$, respectively.
+Then, a commitment $C$ to the sum polynomial $\phi=\phi_1 + \phi_2$ can be computed as $C=C_1 C_2=g^{\phi_1(\tau)} g^{\phi_2(\tau)} = g^{\phi_1(\tau) + {\phi_2(\tau)}} = g^{(\phi_1 +\phi_2)(\tau)} = g^{\phi(\tau)}$.
+Even better, a proof $\pi$ for $\phi(a)$ w.r.t. $C$ can be aggregated as $\pi = \pi_1 \pi_2$.
+This homomorphism is necessary in KZG-based protocols such as \ejfdkg (see \cref{s:prelim:dkg}).
+

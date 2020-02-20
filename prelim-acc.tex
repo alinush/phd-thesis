@@ -1,0 +1,12 @@
+A \textit{cryptographic accumulator}~\cite{acc-rsa,Nguyen05} is a commitment to a set of \textit{elements} $T = \{e_1, e_2, \dots, e_n\}$ referred to as the \textit{accumulated set}.
+This commitment is often referred to as the \textit{accumulator}.
+Accumulators have three key features.
+First, \textit{membership} and \textit{non-membership} of any element can be proven w.r.t. the accumulator.
+These proofs are called \textit{(non)membership witnesses} and are typically constant-sized.
+Accumulators that support both membership and non-membership witnesses are called \textit{universal}~\cite{LLX07}.
+Second, given two sets $T_1 \subseteq T_2$ and their accumulators $a_1$ and $a_2$, a \textit{subset witness} can be computed that convinces anyone with $a_1$ and $a_2$ that $T_1 \subseteq T_2$.
+Third, a \textit{disjointness witness} can be computed for sets $T_1 \cap T_2 = \varnothing$ w.r.t. their accumulators.
+
+A \textit{Merkle hash tree} over $n$ elements can be considered to be a cryptographic accumulator since, depending on how it is organized, it can offer some of the accumulator functionality (but not all).
+In this thesis, however, we are concerned with accumulators that offer \textit{all} of the features from above.
+This limits us to \textit{RSA accumulators} (see \cref{s:prelim:rsa-acc}), which we enhance in \cref{s:aas:from-rsa-acc:rsa-acc-enhance}, and \textit{bilinear accumulators} (see \cref{s:prelim:bilinear-acc}).

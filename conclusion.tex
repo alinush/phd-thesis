@@ -1,0 +1,22 @@
+This thesis makes progress on two fundamental problems in cryptography: keeping secrets and exchanging public keys.
+
+First, we showed how to scale verifiable secret sharing (VSS) to millions of participants.
+Our scalable VSS protocol can be used to make leaking a secret key much harder by splitting it across millions of devices and forcing adversaries to compromise more than half of them.
+We then showed how to use such a secret to \textit{quickly} sign messages only if more than half of the million signers cooperate.
+Specifically, we proposed a threshold signature scheme (TSS) that scales to millions of signers.
+Compared to previous TSSs at this scale, our scheme can sign a message in tens of seconds rather than tens of hours.
+Our TSS can be used to decentralize signing authorities on the Internet and to create randomness beacons.
+Yet to securely bootstrap our scalable TSS, we need a scalable distributed key generation (DKG) to securely generate its key without anybody learning it.
+For this, we showed how to use our scalable VSS to obtain a scalable DKG.
+At the same time, we left some problems to future work, such as the VSS/DKG broadcast channel and the worst-case overhead of complaints in DKGs.
+
+Second, we showed how to build append-only logs using only a single untrusted server and no additional trust assumptions.
+Our construction is the first to achieve logarithmic proof sizes for both append-only and lookup proofs.
+Our logs can be used to secure the public key infrastructures that are crucial for secure web browsing and for end-to-end encrypted messaging.
+Furthermore, our logs can help secure the currently-feeble software distribution ecosystem, where users can be easily tricked into downloading malicious binaries.
+Unfortunately, our log's polylogarithmic (de)amortized append time is not yet fast enough for practice and we hope to speed it up in future work.
+Similarly, (some of) our concrete proof sizes could also be further reduced in future work.
+
+At the core of almost all constructions in this thesis lie new techniques for computing proofs fast in constant-sized polynomial commitments and in cryptographic accumulators.
+We believe some of these techniques could be of independent interest.
+For example, our authenticated multipoint evaluation tree (AMT) gives rise to a new vector commitment (VC) scheme, which can be used to scale cryptocurrencies.

@@ -1,0 +1,396 @@
+Here, we give detailed algorithms that implement our amortized, dynamic AAS from \cref{s:aas:from-bilinear-acc}.
+Recall that our AAS is just a forest of PCTs with corresponding FCTs.
+Importantly, recall that our dynamic AAS is a forest that grows over time, as depicted in \cref{f:forest}.
+In particular, observe that each forest node has a prefix accumulator associated with it, while root nodes in the forest have FCTs associated with them.
+Our algorithms described below operate on this forest, adding new leaves, merging nodes in the forest and computing FCTs in the roots.
+
+An important detail is that a bilinear accumulators $g^{\charpoly_A(s)}$ for a set $A$ is often accompanied by an ``extractable'' counterpart $g^{\tau \charpoly_A(s)}$.
+Here $s$ is the $q$-SDH trapdoor and $\tau$ denotes another trapdoor.
+The extractable counterpart is necessary to prove security of our (non)membership proofs and our append-only proofs under $q$-PKE (see \cref{s:aas:from-bilinear-acc:proofs}).
+
+\paragraph{Trees Notation.}
+\label{s:prelim:notation:trees}
+The $|$ symbol denotes string concatenation.
+A \textit{tree} is a set of nodes denoted by binary strings in a canonical way.
+The root of a tree is denoted by the empty string $\varepsilon$ and the left and right children of a node $w$ are denoted by $w|0$ and $w|1$, respectively.
+If $b\in\{0,1\}$, then the sibling of $w = v|b$ is denoted by $\sibling(w) = v|\overline{b}$, where $\overline{b} = 1-b$.
+A \emph{path} from one node $v$ to its ancestor node $w$ is denoted by $\treepath[v,w] = \{u_1 = v, u_2 = \parent(u_1), \dots, u_\ell = \parent(u_{\ell-1}) = w\}$.
+The parent node of $v = w|b$ is denoted by $\parent(v) = \parent(w|b) = w$.
+We also use $\treepath[v,w) = \treepath[v,w]-\{w\}$.
+
+\paragraph{Forest Notation.}
+\label{s:prelim:notation:forests}
+Let $F_i$ denote a forest of $\le \upperbound$ leaves that only has $i$ leaves in it.
+(For example, \cref{f:forest} depicts a forest with $B=8$ growing from one leaf to five leaves.)
+Intuitively, a forest is a set of trees where each tree's size is a \textit{unique} power of two (e.g., see $F_5$ in \cref{f:forest}).
+The unique tree sizes are maintained by constantly merging trees of the same size.
+% When \upperbound = 1, there will be one leaf with 0 bits (\ceil(\log(1)) = 0): the empty string.
+% When \upperbound = 2, we need \ceil(\log(2)) = 1 bit for each of the two leaves, and their root will be the empty string, and so on.
+% When \upperbound = 3, we need \ceil(\log(3)) = 2 bits for each of the three leaves.
+Let $\bin^\upperbound(x)$ denote the $\ceil{\log{\upperbound}}$-bit binary expansion of a number $x$ (e.g., $\bin^{14}(6)=0110$).
+(Note that $\bin^1(x) = \varepsilon,\forall x$ because $\ceil{\log{1}}=0$.)
+In our AAS, $\bin^\upperbound(i)$ denotes the $i$th inserted leaf, where $i$ starts at 0 (e.g., see leaves 000 through 111 in $F_5$ in \cref{f:forest}).
+Let $\roots(F_i)$ denote all the roots of all the trees in the forest (e.g., $\roots(F_5) = \{0, 111\}$ in \cref{f:forest}).
+Let $\leaves(F_i)$ denote all the leaves in the forest (e.g., $\leaves(F_3) = \{000, 001, 010\}$ in \cref{f:forest}).
+
+\paragraph{AAS Notation.}
+Our algorithms use \textbf{assert} to ensure a condition is true or fail the calling function otherwise. 
+Let $\dom(f)$ be the domain of a function $f$. %(i.e. $\forall x \in \dom(f), \exists y$ such that $f(x) = y$).
+We use $f(x)=\bot$ to indicate $x\notin \dom(f)$.
+Let $\AS_i$ denote our AAS with $i$ elements.
+Each node $w$ in the forest stores ``extractable'' accumulators $\acc_w, \eacc_w$ of its PCT together with a Merkle hash $\hash_w$.
+Internal nodes (i.e., non-roots) store a subset witness $\subsetProof_w$ between $\acc_w$ and $\acc_{\parent(w)}$.
+The digest $d_i$ of $\AS_i$ maps each root $r$ to its Merkle hash $\hash_r$.
+Every root $r$ stores a disjointness witness $\disj_r$ between its PCT and FCT.
+For simplicity, we assume server algorithms implicitly ``parse out'' the \myblue{\textbf{bolded blue variables}} from $\AS_i$.
+% The algorithms below sometimes incrementally build a function $f$ by adding new points $\left(u, v = f(u)\right)$ to its graph, either via $f = f\cup \{(u,v)\}$ or via $f(u) \gets v$.
+
+\paragraph{Server Algorithms.}
+{\setup}$(\cdot)$ generates large enough $q$-PKE public parameters $\PPpke_q(g; s,\tau)$ (see \cref{def:q-pke}), given an upper bound $\upperbound$ on the number of elements.
+Importantly, the server forgets the trapdoors $s$ and $\tau$ used to generate the public parameters.
+In other words, this is a \emph{trusted setup} phase (see \cref{s:prelim:trusted-setup}).
+
+% Assuming elements are hashed to 2\lambda bits:
+%
+% The size of the AAS server public parameters
+% --------------------------------------------
+% \upperbound > 0 is the max # of elements
+% When \upperbound = 2^k:
+%  - the worst-case forest has a single PCT with \upperbound leaves, one for each element
+%  - each element has 2\lambda bits and thus 2\lambda + 1 prefixes (b.c. we include the empty prefix \varepsilon, which we could exclude actually, since all elements have it)
+%  - so, the root node of the PCT accumulates (2\lambda + 1)\upperbound prefixes (this is only true for \upperbound = 1 because, when \upperbound > 1, some prefixes will coincide)
+% When 2^k < \upperbound < 2^{k+1}:
+%  - the worst-case forest's largest PCT has \ell = 2^{\floor{\log{\upperbound}}} leaves
+%    (e.g., If \upperbound = 10, the largest PCT will have 8 leaves, and the next PCT will have 2 leaves.
+%     Incidentally, when \upperbound is not a power of two, we actually support adding more than \upperbound elements: 2^{k+1} - 1 to be exact.
+%     For \upperbound = 10, we can add 8 + 4 + 2 + 1 = 15.)
+%  - so, the root node of the PCT accumulates (2\lambda+1)\ell prefixes
+%
+% So, in general, we need (2\lambda+1)\ell prefixes in the root node of the largest PCT, where \ell = 2^{\floor{\log{\upperbound}}}
+% Since a polynomial $\sum_{i=1}^q (x-r_i)$ with $q$ roots has degree $q$, that means the degree of the root prefix accumulator will be (2\lambda+1)\ell.
+% (Note: In the implementation, we could avoid accumulating the empty prefix, since all keys will have it. But we do not.)
+%
+% The size of the AAS clients public parameters
+% ---------------------------------------------
+% The client needs to be able to reconstruct any leaf accumulato over 2\lambda+1 prefixes.
+% So he needs to commit to polynomials of degree exactly $q=2\lambda + 1$
+
+\begin{algorithm}[H]
+    %\footnotesize
+    %\small
+    \begin{algorithmic}[1]
+    \caption{\small Computes public parameters (trusted setup)}
+    \label{a:aas:setup}
+    \Function{\setup}{$1^\lambda, \upperbound$} $\rightarrow (\pp, \vk)$ \Comment{Generates $q$-PKE public parameters}
+        \State
+            $\ell \gets 2^{\floor{\log{\upperbound}}} \qquad
+             q \gets (2\lambda + 1)\ell \qquad
+             ( \Group,\GT,p,g,e(\cdot,\cdot) ) \leftarrow \groupkosetup(1^\lambda)$
+        \State
+            $s\stackrel{\$}{\gets} \Fp \qquad
+             \tau\stackrel{\$}{\gets} \Fp \qquad
+             \vk=((g^{s^i})_{i=0}^{2\lambda + 1}, g^\tau)$
+        \State \Return $((( \Group,\GT,p,g,e(\cdot,\cdot) ), \upperbound, \PPpke_q(g; s,\tau)), \vk )$
+    \EndFunction
+    \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[H]%[tb] % sigle column
+    \caption{\small Appends a new $i$th element to the AAS, $i\in[0,\upperbound-1]$}
+    \label{a:aas:append}
+    %\footnotesize
+    %\small
+    \begin{algorithmic}[1]
+    \Function{\append}{$\pp,\AS_i, d_i, k$} $\rightarrow (\AS_{i+1}, d_{i+1})$
+        \State $w \gets \bin^\upperbound(i) \qquad \elems_w \gets \{k\}$\Comment{Create new leaf $w$ for element $k$}
+        \label{a:aas:append:create-leaf-begin}
+        \State $(\accpoly_w, {\acc}_w, \cdot) \gets \accumulate(\prefixes(\elems_w)) \quad \hash_w \gets \Hb(w|\bot|{\acc}_w|\bot)$
+        \label{a:aas:append:create-leaf-end}
+
+        \LineComment{``Merge'' old PCT roots with new PCT root (recursively)}
+        \While{$\sibling(w)\in \roots(F_i)$}
+        \label{a:aas:append:merge-begin}
+            \State $\ell \gets\sibling(w) \qquad p\gets \parent(w) \qquad \elems_p \gets \elems_\ell\cup \elems_w$
+            \State $(\accpoly_p, {\acc}_p, \eacc_p) \gets \accumulate(\prefixes(\elems_p))\qquad \hash_p = \Hb(p|\hash_\ell|{\acc}_p|\hash_w)$
+            \State $(\cdot, \subsetProof_\ell, \cdot) \gets \accumulate(\prefixes(\elems_p\setminus \elems_\ell))$
+            \State $(\cdot, \subsetProof_w, \cdot) \gets \accumulate(\prefixes(\elems_p \setminus \elems_w)) \qquad w\gets p$
+        \EndWhile
+        \label{a:aas:append:merge-end}
+        % Note: Adding a single leaf will always create exactly one new root, possibly by merging more than two old roots.
+
+        \LineComment{Invariant: $w$ is a new root in $F_{i+1}$. Next, computes $w$'s frontier.}
+        \label{a:aas:append:root-at-begin}
+        \State $(\fropoly_w,\bft_w) \gets \createfrontier(F(\elems_w))$
+        % We need frontier polynomial \fropoly_w here to compute the EEA coeffs below!
+        \State $(y,z)\gets \mathsf{ExtEuclideanAlg}(\accpoly_w, \fropoly_w)\qquad {\disj}_w \gets ( g^{y(s)}, g^{z(s)})$
+        \label{a:aas:append:root-at-end}
+
+        \State Store updated AAS state (i.e., the \myblue{\textbf{bolded blue}} variables) into $\AS_{i+1}$
+        \State $d_{i+1}(r) \gets \hash_r, \forall r \in \roots(F_{i+1})$\Comment{Set new digest}
+        \State \Return $\AS_{i+1}, d_{i+1}$
+    \EndFunction
+
+    % Note that this function is implicitly given access to all the public parameters it needs.
+    \Function{\accumulate}{$T$}
+        \State \Return $(\accpoly, g^{\accpoly(s)}, g^{\tau \accpoly(s)})$ where $\accpoly(x)=\prod_{w \in T} {(x-\Hp(w))}$
+    \EndFunction
+    \end{algorithmic}
+\end{algorithm}
+
+{\append}$(\cdot)$ creates a new leaf $\ell$ for the element $k$ (\crefrange{a:aas:append:create-leaf-begin}{a:aas:append:create-leaf-end}).
+It recursively merges equal-sized PCTs in the forest, as described in \cref{s:aas:from-bilinear-acc} (\crefrange{a:aas:append:merge-begin}{a:aas:append:merge-end}).
+In this process, it computes subset witnesses between old PCT roots and the new PCT.
+Merging ends when the newly created PCT $w$ has no equal-sized PCT to be merged with.
+Recall from \cref{s:prelim:polycommit} that $\Hp$ maps elements to be accumulated to field elements in $\Fp$.
+
+If $k$ is in the set, $\provememb(\cdot)$ sends a Merkle path to $k$'s leaf in some tree with root $r$ (\crefrange{a:aas:provememb:paths-begin}{a:aas:provememb:paths-end}) via $\provepath(\cdot)$ (see \cref{a:aas:provepath}).
+This path contains subset witnesses between every node's accumulator and its parent node's accumulator.
+If $k$ is not in the set, then $\provememb(\cdot)$ sends frontier proofs in each FCT in the forest (\crefrange{a:aas:provememb:frontier-begin}{a:aas:provememb:frontier-end}) via $\provefrontier(\cdot)$ (see \cref{a:at:provefrontier}).
+
+\begin{algorithm}[H]%[tb] % sigle column
+    \caption{\small Constructs a (non)membership proof}
+    \label{a:aas:provememb}
+    \label{a:aas:provepath}
+    %\footnotesize
+    \begin{algorithmic}[1]
+    \Function{\provememb}{$\pp,\AS_i,k$} $\rightarrow (b,\pi)$
+        \State Let $\ell\in \leaves(F_i)$ be the leaf where $k$ is stored or $\bot$ if $k\notin \AS_i$
+        \If{$k \in \AS_i$} \Comment{Construct Merkle path to element}
+            \label{a:aas:provememb:paths-begin}
+            \State Let $r\in \roots(F_i)$ be the root of the tree where $k$ is stored
+            \State $\pi \gets \provepath(\AS_i, \ell, r,\bot)\qquad b\gets 1$ % \qquad R\gets R-\{r\}
+            \label{a:aas:provememb:paths-end}
+        \Else \Comment{Prove non-membership in all FCTs}
+            \label{a:aas:provememb:frontier-begin}
+            \State $\CP_r\gets \provefrontier(\AS_i,r,k),\forall r\in \roots(F_i)$
+            % We don't need extractability for prefix accumulators in non-membership proofs
+            % We do need the hashes of the root's children (if any) for the client to verify this prefix accumulator against the Merke root hash
+            % (note if r|c does not exist because r is a leaf, then we assume h_{r|c} equals \bot)
+            \State $\pi\gets \proverootaccs(\AS_i, \pi)\quad b\gets 0$
+            \label{a:aas:provememb:frontier-end}
+        \EndIf
+        \State \Return $b, ( \ell, \pi, (\CP_r)_{r\in \roots(F_i)}, (\disj_r)_{r\in \roots(F_i)})$
+    \EndFunction
+
+    % Includes leaf (u) and root (r) prefix accumulators, as well as (u)'s subset witness
+    \Function{\provepath}{$\AS_i,u,r,\pi$} $\rightarrow \pi$\Comment{Precondition: $r$ is a root in $F_i$}
+        \State $\pi(r) \gets ( \bot, \acc_r, \eacc_r, \bot)$
+        \LineComment{Overwrites $\pi(w)$ set by previous \provepath call (if any)}
+        \State $\pi(w) \gets ( \bot, \acc_w, \eacc_w, \subsetProof_w), \forall w\in \treepath[u,r)$
+        \LineComment{Only sets $\pi(\sibling(w))$ if not already set from previous \provepath call!}
+        \For{$w\in \treepath[u,r)$ where $\sibling(w)\notin \dom(\pi)$}
+            \State $\pi(\sibling(w)) \gets ( \hash_{\sibling(w)}, \bot,\bot,\bot)$
+        \EndFor
+        \State \Return $\pi$
+    \EndFunction
+
+    \Function{\proverootaccs}{$\AS_i,\pi$} $\rightarrow \pi$
+        % Note: Non-membership proofs don't need the extractable counterpart, but \verappendonly does.
+        \State $\pi(r)\gets (\bot,\acc_{r}, \eacc_{r}, \bot), \forall r\in\roots(F_i),$
+        \State $\pi(r|c)\gets (\hash_{r|c},\bot,\bot,\bot), \forall r\in\roots(F_i), \forall c\in \{0,1\}$
+    \EndFunction
+    \end{algorithmic}
+\end{algorithm}
+
+For each root $r$ in $F_i$, {\proveappendonly}$(\cdot)$ sends a Merkle path to an ancestor root in $F_j$, if any.
+The Merkle path contains subset witnesses between all prefix accumulators along the path.
+It also contains the root prefix accumulators from $F_i$, which the client will verify against his digest $d_i$.
+
+\paragraph{Client Algorithms.}
+{\verappendonly}$(\cdot)$ first ensures that $d_i$ and $d_j$ are digests at version $i$ and $j$, respectively (\crefrange{a:aas:verappendonly:check-digest-begin}{a:aas:verappendonly:check-digest-end}).
+This involves checking that $d_i$ has the expected number of roots (i.e., same as in $F_i$) and that the Merkle hash of each root $r$ in $d_i$ is computed with the correct label $r$ as $d_i(r)=\Hb(r|h_{r|0}|a_r|h_{r|1})$.
+However, for simplicity of exposition, \crefrange{a:aas:verappendonly:check-digest-begin}{a:aas:verappendonly:check-digest-end} of {\verappendonly}$(\cdot)$ leave these details out.
+
+Before checking subset witnesses, {\verappendonly}$(\cdot)$ validates the old root prefix accumulators in $\pi_{i,j}$ against the Merkle roots in $d_i$ (\crefrange{a:aas:verappendonly:check-old-root-accs-begin}{a:aas:verappendonly:check-old-root-accs-end}).
+Without this check, any old root prefix accumulator could be maliciously given in the append-only proof $\pi_{i,j}$, breaking the append-only property.
+Then, it checks that each root $r$ from $F_i$ is a subset of some root in $F_j$ by checking subset witnesses (\cref{a:aas:verappendonly:paths}) via $\verpath(\cdot)$ (see \cref{a:helper:verpath}).
+
+{\verappendonly}$(\cdot)$ enforces fork consistency implicitly when verifying Merkle hashes.
+For this to work, \cref{a:aas:verappendonly:well-formed} first ensures that the Merkle paths from the old roots to the new roots are ``well-formed.''
+This means checking that the proof paths contains all the expected sibiling Merkle hashes, at the right positions, and no other Merkle hashes.
+If other Merkle hashes were included, our recursive $\mathsf{MerkleHash}(\cdot)$ implementation could be tricked into thinking an invalid Merkle path validates.
+
+\begin{algorithm}[H]%[tb] % sigle column
+    \caption{\small Creates and verifies append-only proofs}
+    \label{a:aas:proveappendonly}
+    \label{a:aas:verappendonly}
+    %\footnotesize
+    \begin{algorithmic}[1]
+    \Function{\proveappendonly}{$\pp,\AS_i,\AS_j$} $\rightarrow \pi$
+        \If{$\roots(F_i)\subset\roots(F_j)$}
+            \Return $\bot$
+        \EndIf
+        \State Let $R=\{$roots $\in F_i$ but $\not\in F_j\}$ and $r'\in \roots(F_j)$ be their ancestor root
+        % Note: When adding two paths, appends to proof \pi or even overwrites it
+        \State $\pi\gets \provepath(\AS_j, r,r',\pi), \forall r \in R\quad \pi\gets\proverootaccs(\AS_i,\pi)$
+        \State \Return $\pi$
+    \EndFunction
+
+    \Function{\verappendonly}{$\vk, d_i, i, d_j, j, \pi_{i,j}$} $\rightarrow \{T,F\}$
+        % Version of digest is implicitly given by the node numbering fixed through Merkle hashing
+        % For the fork consistency definition, VerAppendOnly needs to check the old version of the digest too (technicality).
+        \Assert $d_i(r) \ne \bot \Leftrightarrow r\in \roots(F_i)$ \Comment{Is valid version $i$ digest?}
+        \label{a:aas:verappendonly:check-digest-begin}
+        \Assert $d_j(r) \ne \bot \Leftrightarrow r\in \roots(F_j)$ \Comment{Is valid version $j$ digest?}
+        \label{a:aas:verappendonly:check-digest-end}
+        \Assert $\forall r \in \roots(F_i) \cap \roots(F_j), d_i(r)=d_j(r)$
+        
+        \State Let $R=\{$roots $\in F_i$ but $\not\in F_j\}$ \Comment{i.e., old roots with paths to new root}
+        % Recall that d_i(r) only stores the Merkle root hash h_r and not the prefix accumulator a_r.
+        % The proof \pi_{i,j} will give a_r but it could give a completely different one, breaking the append-only property.
+        % Thus, whatever it gives must be verified.
+        \ForAll{$r\in \roots(F_i)$} \Comment{Check proof gives correct old root accumulators}
+            \label{a:aas:verappendonly:check-old-root-accs-begin}
+            \State $(\cdot,a_{r},\cdot,\cdot)\gets \pi(r)$ \quad $({h}_{r|b},\cdot,\cdot,\cdot) \gets \pi(r|b),\forall b\in \{0,1\}$
+            \Assert $d_i(r) = \Hb(r|h_{r|0}|a_r|h_{r|1})$
+        \EndFor
+        \label{a:aas:verappendonly:check-old-root-accs-end}
+        \State $\forall r\in R$, fetch $h_r$ from $d_i(r)$ and update $\pi_{i,j}(r)$ with it
+        \Assert $\pi_{i,j}$ is well-formed Merkle proof for all roots in $R$
+        \label{a:aas:verappendonly:well-formed}
+        \Assert $\forall r\in R,\verpath(d_j, r, \pi_{i,j})$
+        \label{a:aas:verappendonly:paths}
+    \EndFunction
+    \end{algorithmic}
+\end{algorithm}
+
+If $k$ is stored at leaf $\ell$ in the AAS, {\vermemb}$(\cdot)$ reconstructs $\ell$'s accumulator from $k$.
+Then, it checks if there's a valid Merkle path from $\ell$ to some root, verifying subset witnesses along the path via $\verpath(\cdot)$ (see \cref{a:helper:verpath}).
+If $k$ is not in the AAS, {\vermemb}$(\cdot)$ verifies frontier proofs for $k$ in each FCT in the forest via $\verfrontier(\cdot)$ (see \cref{a:at:verfrontier}).
+
+\begin{algorithm}[H]%[tb] % single column
+    \caption{\small Verifies a (non)membership proof}
+    \label{a:aas:vermemb}
+    \label{a:helper:verpath}
+    %\footnotesize
+    \begin{algorithmic}[1]
+    \Function{\vermemb}{$\vk, d_i,k,b,\pi_k$} $\rightarrow \{T,F\}$
+    \State Parse $\pi_{k}$ as $\ell, \pi, (\CP_r)_{r\in \roots(F_i)}, (y_r, z_r)_{r\in \roots(F_i)}$
+    \If{$b = 1$} \Comment{This is a membership proof being verified}
+    \label{a:aas:vermemb:foreach-leaf}
+        \label{a:aas:vermemb:verpath-begin}
+        \State $(\cdot, a_\ell, \hat{a}_\ell)\gets \accumulate(\prefixes(\{k\}))\qquad h_\ell \gets \Hb(\ell|\bot|a_\ell|\bot)$
+        % VerPath will need a_\ell when recursively checking the append-only property
+        % Also, this is an update, not an overwrite, because we have to preserve the subset witness from \pi(\ell) (if any)
+        \State Update $\pi(\ell)$ with $h_\ell$ and accumulators $a_\ell$ and $\hat{a}_\ell$
+        \Assert $\pi$ is well-formed Merkle proof for leaf $\ell \wedge {\verpath(d_i, \ell, \pi)}$
+        \label{a:aas:vermemb:verpath-end}
+    \Else  \Comment{This is a non-membership proof being verified}
+        \label{a:aas:vermemb:verfrontier-begin}
+        % Get FCT and PCT accs. Validate PCT accs against digest.
+        \ForAll{$r\in \roots(F_i)$} \Comment{Check FCTs}
+            \State $(\cdot,a_{r},\cdot,\cdot)\gets \pi(r)$ \quad $(o_r, \cdot) \gets \CP_r(\varepsilon)$
+            \State $({h}_{r|b},\cdot,\cdot,\cdot) \gets \pi(r|b),\forall b\in \{0,1\}$
+            \Assert $d_i(r) = \Hb(r|h_{r|0}|a_r|h_{r|1})$
+            \Assert $e(a_r,y_r)e(o_r,z_r) = e(g,g) \wedge \verfrontier(k, \CP_r)$
+        \EndFor
+        \label{a:aas:vermemb:verfrontier-end}
+    \EndIf
+    \EndFunction
+
+    % Note: w is always a node in F_i
+    \Function{\verpath}{$d_k,w,\pi$} $\rightarrow \{T,F\}$ \Comment{Checks Merkle path from $w$ to some root in $d_k$}
+        \State Let $r\in \roots(F_k)$ denote the ancestor root of $w$
+        \LineComment{Walk path invariant: $u$ is \textit{not} a root node (but $\parent(u)$ might be)}
+        \For{$u\gets w; u \neq r; u\gets\parent(u)$}
+            \State $p \gets \parent(u)$\Comment{Check subset witness and extractability (below)}
+            \State $(\cdot, a_{u}, \hat{a}_{u}, \pi_{u}) \gets \pi(u)\quad(\cdot, a_{p}, \hat{a}_{p}, \cdot) \gets \pi(p)$
+            \Assert $e(a_u, \pi_u) = e(a_p, g) \wedge e(a_u, g^\tau) = e(\hat{a}_u, g)$
+            \label{a:aas:verpath:extractability-check}
+        \EndFor
+        \Assert $d_k(r) = \mathsf{MerkleHash}(\pi, r)$ \Comment{Invariant: $u$ equals $r$ now}
+        \label{a:aas:verpath:merklehash}
+        \Assert $e(a_r, g^\tau) = e(\hat{a}_r, g)$\Comment{Is root accumulator extractable?}
+
+    \EndFunction
+    % Note: Does NOT modify Merkle proof \pi. Just returns the computed Merkle root hash.
+    \Function{$\mathsf{MerkleHash}$}{$\pi, w$} $\rightarrow h_w$
+    \label{a:aas:merklehash}
+        \State $(h_w, a_w, \cdot,\cdot) \gets \pi(w)$
+        \If{$h_w = \bot$}
+            \State \Return $\Hb(w|\mathsf{MerkleHash}(\pi, w|0)|a_w|\mathsf{MerkleHash}(\pi, w|1))$
+        \Else
+            \State \Return $h_w$
+        \EndIf
+    \EndFunction
+    \end{algorithmic}
+\end{algorithm}
+
+\paragraph{Frontier Algorithms.}
+{\createfrontier}$(\cdot)$ creates a FCT level by level, starting from the leaves, given a set of frontier prefixes $F$.
+Given a key $k\notin \AS_i$ and a root $r$, {\provefrontier}$(\cdot)$ returns a frontier proof for $k$ in the FCT at root $r$.
+{\verfrontier}$(\cdot)$ verifies a frontier proof for one of $k$'s prefixes against a specific root FCT accumulator.
+\begin{algorithm}[H]
+    \begin{algorithmic}[1]
+    \caption{\small Manages FCT of a set}
+    \label{a:at:createfrontier}
+    \label{a:at:provefrontier}
+    \label{a:at:verfrontier}
+    %\footnotesize
+    \Function{\createfrontier}{$F$} $\rightarrow (\phi,\sigma)$
+        \State $i\gets 0\qquad S_w\gets \varnothing, \forall w$
+        \For{$\rho \in F$} \Comment{First, build FCT leaves, with $g^{s-\Hp(\rho)}$ for each prefix $\rho$}
+            \State $w\gets \bin^{|F|}(i)\qquad S_w \gets \rho\qquad i\gets i+1$
+            \State $(\fropoly_w,\fac,\efac) \gets \accumulate(S_w)\quad \sigma(w) \gets (\fac, \efac)$
+        \EndFor
+
+        % Example: When |F| = 5, this code merges the first two leaves, then the next two leaves, then for the 5th leaf without a sibling, it just "merges" it with its empty sibling.
+        % In other words, its parent will have the same frontier accumulator and the tree looks like this:
+        %        r
+        %    -       -
+        %  *   *   *
+        % 1 2 3 4 5
+        % In our C++ implementation, we have a more efficient implementation, where the tree looks like this:
+        %        r
+        %    -       5
+        %  *   *
+        % 1 2 3 4
+        \For{$i \gets \ceil{\log{|F|}}; i\ne 0; i\gets i-1$} \Comment{Then, build FCT level by level}
+            \State $j\gets 0\qquad \mathsf{levelSize} \gets 2^i\qquad u\gets \bin^{\mathsf{levelSize}}(0)$
+            \While{$S_u \ne \varnothing$} \Comment{Merge sibling accumulators on level $i$}
+                \State $p \gets \parent(u)\quad S_p \gets S_u\cup S_{\sibling(u)} \quad j \gets j+2$
+                \State $(\fropoly_p,\fac,\efac) \gets \accumulate(S_p)\quad \sigma(p) \gets (\fac, \efac)\quad u \gets \bin^\mathsf{levelSize}(j)$
+            \EndWhile
+        \EndFor
+        \State \Return $( \fropoly_\varepsilon, \sigma)$
+    \EndFunction
+
+    \Function{\provefrontier}{$\AS_i, r, k$} $\rightarrow \CP$
+        \State Let $\rho$ be the smallest prefix of $k$ that is not in $\prefixes(\elems_r)$
+        \State Let $\ell$ denote the leaf where $\bft_r(\ell) = g^{(s-\Hp(\rho))}$
+        \State $\CP(\varepsilon) \gets \bft_r(\varepsilon)$ \Comment{Copy root FCT accumulator}
+        \For{$w\in \treepath[\ell, \varepsilon)$}\Comment{Copy path to $\rho$'s FCT leaf}
+            \State $\CP(w) \gets \bft_r(w)$
+            \If{$\bft_r(\sibling(w))\ne \bot}$
+                % Note: Siblings need not be extractable, but for simplicity of the code we don't optimize.
+                % Asymptotically, proof-size remains the same.
+                \State $\CP(\sibling(w)) \gets \bft_r(\sibling(w))$
+            \Else
+                % This handles frontier tree sizes that are not powers of two.
+                % Continuing with the |F|=5 example from \createfrontier, the 5th leaf (at level 3) would have an empty sibling.
+                % So would its parent at level 2. But its parent at level 1 wouldn't. And level 0 is the root. Just look at the tree:
+                %
+                %        r
+                %    -       -
+                %  *   *   *
+                % 1 2 3 4 5
+                \State $\CP(\sibling(w)) \gets (g, g^\tau)$
+            \EndIf
+        \EndFor
+        \State \Return $\CP$
+    \EndFunction
+
+    \Function{\verfrontier}{$k,\CP$} $\rightarrow \{T,F\}$
+        \LineComment{Find leaf $\ell$ in $\CP$ with a prefix $\rho$ for $k$, or fail.}
+        \Assert $\exists \ell,\rho$ such that $\rho\in \prefixes(\{k\}) \wedge g^{(s-\Hp(\rho))} = \CP(\ell)$
+        \Assert $e(\fac, g^\tau) = e(\efac_w, g)$ where $(\fac,\efac)\gets \CP(\varepsilon)$
+        %\Comment{Root FCT accumulator is extractable?}
+        % NOTE: The 'for' loop below implicitly verifies against root in FCT as well!
+        \For{$w\in \treepath[\ell, \varepsilon)$}\Comment{Verify $\rho$'s membership in the FCT}
+            \State $(c_w,\hat{c}_w) \gets \CP(w)\quad (s_w,\cdot)\gets \CP(\sibling(w))$
+            \State $(p_w,\cdot) \gets \CP(\parent(w))$
+            \Assert $e(c_w, s_w) = e(p_w, g)\wedge e(c_w, g^\tau) = e(\hat{c}_w, g)$
+        \EndFor
+    \EndFunction
+    \end{algorithmic}
+\end{algorithm}

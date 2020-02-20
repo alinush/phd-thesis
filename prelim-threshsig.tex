@@ -1,0 +1,28 @@
+A $(t,n)$-threshold signature scheme (TSS) is a protocol amongst $n$ \textit{signers} where \textit{only} subsets of size $\ge t$ can produce a \textit{digital signature}~\cite{rsa} on a message $m$.
+Many signature schemes can be turned into a TSS, such as 
+RSA~\cite{rsa,Shoup00}, 
+Schnorr~\cite{Schnorr89,SS01,GJKR03}, 
+ElGamal~\cite{ElGamal1985APublicKey,PK96,GJKR96}, 
+ECDSA~\cite{GGN16} and 
+BLS~\cite{BLS04,Boldyreva03}.
+In this thesis, we focus on the BLS TSS because of its simplicity.
+
+\subsection{(Threshold) BLS signatures}
+\label{s:prelim:threshsig:bls}
+
+A normal BLS signature on a message $m\in \{0,1\}^*$ is $\sigma = H(m)^s$ where $s\in_R \Fp$ is the \textit{secret key} and $H : \{0,1\}^* \rightarrow \Group$ is a hash function modeled as a random oracle.
+To verify the signature against the \textit{public key} $g^s$, a bilinear map $e$ is used to ensure that $e(H(m), g^s) \stackrel{?}{=} e(\sigma, g)\Leftrightarrow e(H(m),g)^s \stackrel{?}{=} e(H(m)^s, g)$.
+
+To obtain a $(t,n)$ BLS TSS~\cite{Boldyreva03}, the secret key $s$ is split amongst the $n$ signers using $(t,n)$ Shamir secret sharing (see \cref{s:prelim:vss}).
+Specifically, each signer $i$ has a \textit{secret key share} $s_i$ of $s$ along with a \textit{verification key} $g^{s_i}$.
+%Reconstructing $s$ directly and then using it to sign $m$ would only result in a one-time threshold signature scheme, since once $s$ is revealed to a signer, the scheme is no longer a threshold scheme.
+To produce a signature on $m$, each $i$ computes a \textit{signature share} $\sigma_i = H(m)^{s_i}$.
+Then, all $\sigma_i$'s are sent to an \textit{aggregator} (e.g., one of the signers).
+
+Since some signers are malicious, their $\sigma_i$ might not be valid.
+Thus, the aggregator verifies each $\sigma_i$ by checking if $e(g^{s_i}, H(m)) \stackrel{?}{=} e(\sigma_i, g)$.
+(This works because $\sigma_i$ is a normal BLS signature that should verify under $g^{s_i}$.)
+This way, the aggregator finds a subset $T$ of $t$ signers who produced a valid signature share $\sigma_i$.
+Now, the aggregator can compute the final signature as $\sigma = \prod_{i\in T} {\sigma_i^{\Ell_i^T(0)}} = H(m)^{\sum_{i\in T} {s_i \Ell_i^T(0)}} = H(m)^s$ via Lagrange interpolation (see \cref{s:prelim:interpolation}).
+Importantly, aggregation never exposes the secret key $s$, which is interpolated ``in the exponent.''
+The time to \textit{aggregate} the signature is $\Theta(t^2)$, dominated by the time to (naively) compute the $\Ell_i^T(0)$'s.

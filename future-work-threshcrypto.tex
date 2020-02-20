@@ -1,0 +1,93 @@
+
+\section{Threshold Cryptosystems}
+\label{s:future-work:threshcrypto}
+
+\subsection{Further Scaling VSS and DKG}
+
+\subsubsection{Scaling the Broadcast Channel}
+\label{s:future-work:threshcrypto:scaling-vss-broadcast}
+A key bottleneck in VSS and DKG protocols is the broadcast channel used to agree on commitments to the polynomials that encode the secret(s).
+Future work can approach scaling the broadcast channel in two ways.
+The first way is to assume the broadcast channel is external to the VSS or DKG protocol and implemented by a different, smaller set of $N \ll n$ parties via a consensus protocol~\cite{pbft}.
+For example, ETHDKG~\cite{SJSW19} takes this approach by using the Ethereum blockchain~\cite{ethereum} as the broadcast channel of a Feldman-style DKG protocol~\cite{GJKR07}.
+The second way is to assume an honest majority among the $n$ VSS/DKG players and rely on this majority to securely run a synchronous consensus protocol~\cite{ADD+19}.
+Sortition techniques from scalable consensus protocols~\cite{algorand} can be employed to further scale such protocols.
+
+\subsubsection{Scaling the DKG Complaint Round}
+\label{s:future-work:threshcrypto:scaling-dkg-complaints}
+The DKG complaint round has worst-case computational quadratic overhead.
+Furthermore, in the worst case, it requires $O(f)$ broadcasts, each $O(f)$-sized, where $f$ is the number of malicious players.
+This seriously limits the scalability of our DKG protocols in the worst-case setting of $f=t-1$ malicious players.
+
+Kate et al.~\cite{KZG10a} partially address this problem for VSS, not DKG, protocols via \textit{batch proofs} as discussed in \cref{s:scalable-vss:batch-complaints}.
+Kate later applies batch proofs to the complaint round in DKG protocols too~\cite{Kate2010}.
+This is a step in the right direction.
+Even though batch proofs increase asymptotic computational complexity, they decrease the concrete computational complexity and the concrete communication complexity (see \cref{s:prelim:evss,s:prelim:dkg:ejfdkg}).
+
+Any future work that improves computing and verifying batch proofs will also improve the concrete complexity of DKG complaints.
+In general, any future work that reduces the complexity of the complaint round would be very interesting.
+For example, we explain next how running the DKG with randomly-picked \textit{subcommittees} can do exactly this.
+
+\subsubsection{Sortitioned DKG}
+\label{s:future-work:threshcrypto:sortition}
+To further reduce communication and computation, we propose a \textit{sortitioned DKG} where only a small, random \textit{committee} of $c < n$ players deal.
+The key question is where does the randomness to pick the committee come from?
+
+When a DKG runs many times, this randomness could come from previous DKG runs (e.g., DKGs for Schnorr TSS nonces).
+To bootstrap securely, the first DKG run would be with a full committee of size $c=n$.
+
+When a DKG runs only once, such as when distributing the secret key of a $(t,n)$ TSS, the $c$ players could be a decentralized cothority~\cite{STV+16} different than the TSS signers.
+The cothority would run the DKG dealing round while the $n$ signers would run the DKG verification round (see \cref{alg:dkg}).
+The complaint round would be split: accused cothority members would compute the KZG batch proofs (see \cref{s:scalable-vss:batch-complaints}) while the $n$ signers would receive and verify those proofs.
+Importantly, our AMT technique would help cothority members deal much more efficiently to the $n$ signers by reducing both the required time and communication.
+We leave defining and proving the security of sortitioned DKGs to future work.
+
+\subsubsection{Scaling VSS and DKG in the Asynchronous Setting}
+A fascinating problem is to scale VSS and DKG in the \textit{asynchronous setting} which assumes very little about message delivery.
+Such protocols sometimes make use of bivariate polynomials~\cite{Kate2010,KG09,KHG12}, for which constant-sized commitments with small-sized evaluation proofs are not known to exist.
+It would be interesting to come up with such a commitment scheme, perhaps modifying the new polynomial commitments based on RSA~\cite{BFS19}.
+It would also be interesting to see if our AMT technique can be applied to bivariate polynomials to save computation in asynchronous VSS/DKG.
+
+\subsection{Enhancing AMTs}
+
+\subsubsection{AMTs for Arbitrary Evaluation Points}
+\label{s:amt:arbitrary-points}
+AMTs can be generalized to any set of points $\{x_i\}_{i\in[n]}$ (not just $x_i=\omega_N^{i-1}$) \textit{for which verifiers do not have the necessary accumulator commitments}.
+The accumulators $g^{a_{w}(\tau)}$ can be included as part of the proof \textit{but} along with (1) a subset witness w.r.t. the parent accumulator and (2) an ``extractable'' counterpart $g^{\alpha a_w(\tau)}$, where $\alpha$ is another trapdoor.
+% Note: Need to add: 
+% - 64 byte accumulator in G2 (so we can pair it with G1 quotient), 
+% - 32 bytes for extractable counterpart in G1 (so we can check it for equality against accumulator in G2 and g^\tau in G1)
+% - 32 bytes for the subset witness in G1 (so we can pair with child accumulator in G1).
+% So overhead goes from 32 bytes per node to 128 bytes per node.
+The asymptotic proof size remains the same but will increase in practice by 4x (with Type III pairings).
+Furthermore, this construction will need extra public parameters of the form $(g^{\alpha \tau^i})_{i\in[0,\ell]}$.
+On the other hand, proof verifiers now need $\Theta(1)$ rather than $\Theta(\log{n})$ public parameters (see \cref{s:amt:public-parameters,s:scalable-vss:public-params}).
+We leave proving this construction secure under $\ell$-PKE~\cite{groth10} to future work.
+
+
+\subsubsection{Information-Theoretic Hiding AMTs}
+\label{s:amt:information-theoretic-amts}
+We can devise an information-theoretic hiding version of our AMT proofs that is compatible with information-theoretic hiding KZG commitments~\cite{KZG10a}.
+This version of AMTs can be used to speed up the unbiasable \newdkg protocol~\cite{GJKR07}. 
+%, although other ways of getting unbiasability exist~\cite{NBB16}.
+% Our evaluation focused on the biasable protocols since we would have observed an improvement of roughly the same magnitude in the unbiasable protocols too.
+% Also for simplicity of presentation, since the PK $\sum_i g^{z_i}$ can be extracted in a simple way.
+Let $h=g^{\kappa}$ be another generator of $\Group$ such that nobody knows the discrete log $\kappa=\log_g(h)$.
+Assume that, in addition to $\mathsf{PP}_q(g; \tau)$, we also have public parameters $\mathsf{PP}_\ell(h;\tau)$.
+
+An information-theoretic hiding KZG commitment to $\phi$ of degree $d$ is $c = g^{\phi(\tau)} h^{r(\tau)} = g^{\phi(\tau)+\kappa r(\tau)}$ where $r$ is a random, degree $d$ polynomial~\cite{KZG10a}.
+Note that $c$ is just a commitment to the polynomial $\psi(x) = \phi(x) + \kappa r(x)$.
+As a consequence, all we have to do is build an AMT for $\psi$.
+For this, we compute an AMT for $\phi$ with public parameters $\PPsdh_\ell(g;\tau)$ and one for $r$ but with parameters $\PPsdh_\ell(h;\tau)$.
+By homomorphically combining these two AMTs we get exactly the AMT for $\psi$ (see \cref{s:scalable-dkg:homomorphic-amt}).
+We leave proving this construction is information-theoretic hiding to future work.
+% Note that the 'hiding' definition from the KZG paper gives the adversary the commitment and a bunch of evaluation proofs, so as to account for the fact that proofs might reveal the polynomial.
+
+
+\subsubsection{Verifying an AMT with $\approx 2n-1$ Pairings}
+\label{s:amt:batch-verification}
+The efficient reconstruction techniques from \cref{s:scalable-vss:reconstruction} reduced the number of pairings when verifying an AMT, but still required $\Theta(t + (n-t)\log{t})$ pairings in the worst case.
+At the cost of doubling the prover time and proof size, this can be reduced to $\approx 2n-1$ pairings, independent of how many proofs are valid.
+The key idea is to also include commitments to the \textit{remainder polynomials} from the multipoint evaluation tree in the AMT (see \cref{f:multipoint-eval}).
+This way, an entire AMT tree can be verified node-by-node, top-to-bottom by checking that the division at each node is correct.
+We leave proving this approach secure to future work.

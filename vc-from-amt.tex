@@ -1,0 +1,66 @@
+Our AMT technique for precomputing evaluation proofs at $N$ points in a polynomial commitment (see \cref{s:amt}) naturally gives rise to a bounded Vector Commitment (VC) scheme similar to~\cite{CF13,CPZ18}.
+Our scheme can be regarded as the univariate polynomial counterpart of Chepurnoy et al.'s scheme~\cite{CPZ18}, which is based on multivariate polynomials.
+
+\subsection{Overview}
+Let $N=2^k$ be the maximum size of vectors our scheme can commit to and let $\omega_N$ be a primitive $N$th root of unity.
+We encode the message $m_i$ at position $i$ in the vector as $\phi(\omega_N^{i-1})=m_i,\forall i\in[N]$ using a degree $N-1$ polynomial $\phi$, similar to~\cite{CDHK15}.
+We then use AMT proofs to prove that $m_i$ is the correct message at position $i$.
+Furthermore, we use the homomorphism of KZG commitments (see \cref{s:prelim:polycommit:kzg:homomorphism}) and of AMT proofs (see \cref{s:amt:homomorphic}) to update VC digests and proofs, respectively.
+Lastly, our VC scheme can be turned into a \textit{subvector commitment scheme (SVC)}~\cite{LM18} using KZG batch proofs (see \cref{s:prelim:polycommit:kzg:batch}).
+
+\subsection{Updating VC Proofs}
+\label{s:vcs:from-amt:updating-proofs}
+Recall from \cref{s:prelim:vcs} that a VC scheme must support updating proofs after the vector has been changed.
+Specifically, if the $j$th message in the vector committed in $c$ changes from $m$ to $m'$, then given a proof $\pi_i$ for any position $i\in[\ell]$, we should be able to update it to a new proof $\pi'_i$ that verifies against the updated vector commitment $c'$, which has $m'$ rather than $m$ at position $j$.
+We describe below how to update proofs by leveraging the AMT homomorphism (see \cref{s:amt:homomorphic}).
+
+Let $\phi(x)$ be the polynomial committed in $c$ and $\phi'(x)$ be the new polynomial of the updated vector committed in $c'$.
+Then, $\phi'(x)=\phi(x) + \Ell_{j-1}(x)(m'-m)$.
+This implies that the AMT of $\phi'$ is just the AMT of $\phi$ homomorphically combined with the AMT of $\Ell_{j-1}(x)(m'-m)$.
+As a consequence, the proof $\pi'_i$ is just the proof $\pi_i$ homomorphically combined with the AMT of $\Ell_{j-1}(x)(m'-m)$, but only at nodes that intersect $\treepath(i)$.
+Thus, to update proofs, we can compute an AMT over $\Ell_{j-1}(x)(m'-m)$ and homomorphically combine it with $\pi'_i$.
+Note that this AMT will only consist of a single path to the evaluation $\Ell_{j-1}(\omega_N^{j-1})=m'-m$.
+
+In practice, to save computation time, AMTs for all $\Ell_i(x),i\in[0,\ell-1]$ can be precomputed during $\vcsetup$ (see \cref{s:prelim:vcs:defs}).
+Then, when a proof $\pi_i$ must be updated after a change at position $j$ from $m$ to $m'$, the precomputed AMT for $\Ell_{j-1}(x)$ can be multiplied by the $m'-m$ delta.
+This results in an AMT for $\Ell_{j-1}(x)(m'-m)$ which can now be used to update $\pi_i$.
+%We refer to the AMT for the $i-1$th Lagrange polynomial as an \textit{update key} $\mathsf{upk}_i$.
+%Note that whenever $m_j$ is updated, $\mathsf{upk}_j$ needs to be sent to every client who wants to update their proof for $m_i$.
+
+\subsection{Construction}
+We give a detailed description of our VC scheme below.
+Security of our VC scheme follows directly from our security proof in \cref{s:amt:proofs} that AMT-based evaluation proofs satisfy \textit{Evaluation Binding} as defined in \cref{def:polycommit:eval-binding}.
+\\
+
+\api $\vcsetup(1^\lambda, \ell)\rightarrow \pp,\vk$.
+% e.g., if you have \ell = 3 elements in the vector, this will interpolate a degree 2 polynomial
+Generates bilinear pairing parameters $\langle \Group, \GT, p, g, e\rangle \leftarrow \groupkosetup(1^\lambda)$
+Generates random $(\ell-1)$-SDH public parameters $\PPsdh_{\ell-1}(g; \tau)$.
+Let $N=2^k$ denote the smallest power of two such that $N \ge \ell$ and let $\omega_N$ denote a primitive $N$th root of unity in $\Fp$.
+For all $i\in[0,\ell-1]$, computes KZG commitments $g^{\Ell_i(\tau)}$ to the Lagrange polynomial $\Ell_i(x)=\prod_{j\in [0,\ell-1], j\ne i} (x-\omega_N^j) / (\omega_N^i - \omega_N^j)$.
+(These are needed to update digests later.)
+Sets $\pp = \left(N, \omega_N, \PPsdh_{\ell-1}(g; \tau),\left(g^{\Ell_i(\tau)}\right)_{i\in[0,\ell-1]}\right)$.
+(Optionally, can also include AMTs for all Lagrange polynomials in \pp, to make updating proofs faster.)
+Sets $\vk = \left(g, (g^{\tau^{2^i}})_{i\in[0,\floor{\log_2{(\ell-1)}}]}\right)$.
+
+\api $\vccommit(\pp, (m_j)_{j\in[\ell]}) \rightarrow c, \mathsf{aux}$.
+Let $\phi(x)=\sum_{j\in[\ell]} \Ell_{j-1}(x) m_j$ be the polynomial that ``encodes'' the vector.
+Note that $\phi(\omega_N^{j-1})=m_j, \forall j\in[\ell]$.
+Computes an AMT over $\phi$, evaluating it at the first $\ell$ $N$th roots of unity (see \cref{s:amt:computing-proofs}).
+Stores the AMT in $\mathsf{aux}$.
+Returns a KZG commitment $c = g^{\phi(\tau)}$ and $\mathsf{aux}$.
+
+\api $\vcopen(\pp, m_i, i, \mathsf{aux}) \rightarrow \pi_i$.
+Parses the AMT out from the auxiliary data $\mathsf{aux}$ and returns an AMT proof for $\phi(\omega_N^{i-1})=m_i$.
+
+\api $\vcverify(\vk, c, m, i, \pi_i) \rightarrow T/F$.
+Verifies the AMT proof $\pi_i$ for $\phi(\omega_N^{i-1})=m_i$ (see \cref{s:amt:verifying-proofs}).
+
+\api $\vcupdate(\pp, c, m, m', j)\rightarrow c'$.
+Sets $c' = c \left(g^{\Ell_{j-1}(\tau)}\right)^{m'-m}$.
+
+\api $\vcproofupdate(\pp, c, \pi_i, m, m', j)\rightarrow \pi'_i$.
+Computes an AMT over $\Ell_{j-1}(x)$ (or fetches the precomputed one from the public parameters \pp, if any).
+Multiplies this AMT by $(m'-m)$.
+Homomorphically combines $\pi_i$ with the AMT for $\Ell_{j-1}(x)(m'-m)$ only at the nodes they intersect at (see \cref{s:vcs:from-amt:updating-proofs}).
+The final result will be the updated proof $\pi'_i$.

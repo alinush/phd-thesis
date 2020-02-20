@@ -1,0 +1,174 @@
+\subsection{Server-side API}
+The untrusted server implements:
+\vspace{1em}
+
+\api {\setup}$(1^\lambda, \upperbound) \rightarrow \pp, \vk$.
+Randomized algorithm that returns public parameters $\pp$ used by the server and a \textit{verification key} $\vk$ used by clients.
+Here, $\lambda$ is a security parameter and $\upperbound$ is an upper-bound on the number of elements $n$ in the set (i.e., $n \le \upperbound$).
+
+\api {\append}$(\pp, \AS_i, d_i, k) \rightarrow \AS_{i+1}, d_{i+1}$.
+Deterministic algorithm that appends a new element $k$ to the version $i$ set, creating a new version $i+1$ set.
+Succeeds only if the set is not full (i.e., $i + 1 \le \upperbound$).
+Returns the new authenticated set $\AS_{i+1}$ and its digest $d_{i+1}$.
+
+\api $\provememb(\pp, \AS_i, k) \rightarrow b, \pi$.
+Deterministic algorithm that proves (non)membership for element $k$.
+When $k$ is in the set, generates a membership proof $\pi$ and sets $b=1$.
+Otherwise, generates a non-membership proof $\pi$ and sets $b=0$.
+
+\api {\proveappendonly}$(\pp, \AS_i, \AS_j) \rightarrow \pi_{i, j}$.
+Deterministic algorithm that proves $\AS_i \subseteq \AS_j$.
+In other words, generates an \textit{append-only proof} $\pi_{i, j}$ that all elements in $\AS_i$ are also present in $\AS_j$.
+Importantly, a malicious server who removed elements from $\AS_j$ that were present in $\AS_i$ cannot construct a valid append-only proof.
+
+\subsection{Client-side API}
+Clients implement:
+\vspace{1em}
+
+\api {\vermemb}$(\vk, d_i, k, b, \pi) \rightarrow \{T, F\}$.
+Deterministic algorithm that verifies proofs returned by $\provememb(\cdot)$ against the digest $d_i$.
+When $b=1$, verifies $k$ is in the set via the membership proof $\pi$.
+When $b=0$, verifies $k$ is \textit{not} in the set via the non-membership proof $\pi$.
+(We formalize security in \cref{s:aas:correctness-and-security}.)
+
+\api {\verappendonly}$(\vk, d_i, i, d_j, j, \pi_{i,j}) \rightarrow \{T, F\}$.
+Deterministic algorithm that ensures a set remains append-only.
+Verifies that $\pi_{i,j}$ correctly proves that the set with digest $d_i$ is a subset of the set with digest $d_j$.
+Also, verifies that $d_i$ and $d_j$ are digests of sets at version $i$ and $j$, respectively, enforcing fork consistency.
+
+\paragraph{Using the API.}
+To use an AAS scheme, first, public parameters need to be computed using a call to $\setup(\cdot)$.
+If the AAS scheme is trapdoored, a trusted party runs $\setup(\cdot)$ and forgets the trapdoor. 
+(This can be securely implemented via a multi-party computation protocol~\cite{GMW87}.)
+Once computed, the parameters can be reused by different servers for different append-only sets.
+$\setup(\cdot)$ also returns a \textit{public} verification key $\vk$ to all clients.
+
+Then, the server broadcasts the initial digest $d_0$ of the empty set $\AS_0$ to its many clients.
+Clients can concurrently start appending elements using $\append(\cdot)$ calls.
+If the server is honest, it serializes $\append(\cdot)$ calls.
+Eventually, the server returns a new digest $d_i$ to clients along with an append-only proof $\pi_{0,i}$ computed using $\proveappendonly(\cdot)$.
+Some clients might be offline but eventually they will receive either $d_i$ or a newer $d_j, j > i$.
+Importantly, whenever clients transition from version $i$ to $j$, they check an append-only proof $\pi_{i,j}$ using $\verappendonly(\vk, d_i, i, d_j, j, \pi_{i,j})$.
+
+Clients can look up elements in the set.
+The server proves (non)membership of an element using $\provememb(\cdot)$.
+A client verifies the proof using $\vermemb(\cdot)$ against their digest.
+As more elements are added by clients, the server continues to publish a new digest $d_j$ and can prove it is a superset of any previous digest $d_i$ using $\proveappendonly(\cdot)$.
+
+\subsection{Correctness and Security}
+\label{s:aas:correctness-and-security}
+We first introduce some helpful notation for our correctness definitions.
+Consider an ordered sequence of $n$ appends $(k_i)_{i\in [n]}$.
+% --- begin multiline ---
+Let 
+$\AS',d' \leftarrow \multiappend(\pp, \AS, d, (k_i)_{i\in [n]})$ 
+denote a sequence of $\append(\cdot)$ calls arbitrarily interleaved with other $\provememb(\cdot)$ and $\proveappendonly(\cdot)$ calls such that 
+$\AS',d'$ $\leftarrow$ $\append(\pp,\AS_{n-1}$, $d_{n-1}, k_{n})$,
+$\AS_{n-1}, d_{n-1}$ $\leftarrow$ $\append(\pp,\AS_{n-2}, d_{n-2}, k_{n-1})$,
+$\dots$,
+$\AS_{1}, d_1$ $\leftarrow$ $\append(\pp,\AS, d, k_{1})$.
+% --- end of multiline ---
+Finally, let $\AS_0$ denote an empty AAS with empty digest $d_0$.
+
+\begin{definition}[Append-only Authenticated Set]
+    \label{def:secure-aas-definition}
+    (\setup, \append, \provememb, \proveappendonly, \vermemb, \verappendonly) is a secure append-only authenticated set (AAS) if
+    $\forall$ upper-bounds $\upperbound=\poly(\lambda)$ it satisfies the following properties:
+\end{definition}
+
+\begin{definition}[AAS Membership Correctness]
+\label{def:aas:membership-correctness}
+$\forall n \le \upperbound$, $\forall$ ordered sequences of appends $(k_i)_{i\in[n]}$, for all elements $k$, where $b=1$ if $k\in (k_i)_{i\in[n]}$ and $b=0$ otherwise,
+\begin{align*}
+\Pr \left[ \begin{array}{c}
+(\pp,\vk) \leftarrow \setup(1^\lambda, \upperbound),\\
+(\AS, d) \leftarrow \multiappend(\pp, \AS_0, d_0, (k_i)_{i\in[n]}),\\
+(b',\pi) \leftarrow \provememb(\pp,\AS, k): \\
+{{b=b'}\wedge{\vermemb(\vk, d, k, b, \pi) = T}}
+\end{array} \right]
+\ge 1 - \negl(\lambda)
+\end{align*}
+\end{definition}
+
+\noindent \textit{Observation:}
+Note that this definition compares the returned bit $b'$ with the ``ground truth'' in $(k_i)_{i\in[n]}$ and thus provides membership correctness.
+Also, it handles non-membership correctness since $b'$ can be zero.
+Finally, the definition handles all possible orders of appending elements.
+
+
+\begin{definition}[AAS Membership Security]
+\label{def:aas:membership-security}
+$\forall$ adversaries \Adv running in time $\poly(\lambda)$,
+\begin{align*}
+\Pr \left[ \begin{array}{c}
+(\pp,\vk) \leftarrow \setup(1^\lambda, \upperbound), \\
+(d, k,\pi,\pi') \leftarrow \Adv(1^\lambda, \pp, \vk)
+: \\
+{\vermemb(\vk,d, k,0,\pi ,) = T} \wedge {} \\
+{\vermemb(\vk,d, k,1,\pi',) = T}
+\end{array} \right] \le \negl(\lambda)
+\end{align*}
+\end{definition}
+
+\noindent \textit{Observation (1):}
+This definition captures the lack of any ``ground truth'' about what was inserted in the set, since there is no trusted source in our model.
+Nonetheless, given a fixed digest $d$, our definition prevents \textit{all} equivocation attacks about the membership of an element in the set.
+
+\noindent \textit{Observation (2):}
+These definitions imply \textit{collision-resistance}: i.e., different sets cannot have the same digest.
+To see this, suppose you have two different sets with the same digest.
+Since the sets differ, there exists an element $x$ that is in the first set but not the second set (without loss of generality).
+Then, membership correctness guarantees you can create a valid membership proof for $x$ w.r.t. the first set and a non-membership proof for $x$ w.r.t. the second set.
+As a result, we will have both a membership and a non-membership proof for $x$ that verifies w.r.t. the same digest.
+This breaks membership security and leads to a contradiction.
+
+
+\begin{definition}[AAS Append-only Correctness]
+\label{def:aas:appendonly-correctness}
+$\forall n \le \upperbound$, $\forall m < n,\forall$ sequences of appends $(k_i)_{i\in[n]}$ where $n\ge2$,
+\begin{align*}
+\Pr \left[ \begin{array}{c}
+(\pp,\vk) \leftarrow \setup(1^\lambda, \upperbound) \\
+(\AS_m, d_m) \leftarrow \multiappend(\pp,\AS_0,d_0,(k_i)_{i\in[m]}),\\
+(\AS_n, d_n) \leftarrow \multiappend(\pp,\AS_m,d_m,(k_i)_{i\in[m+1,n]}),  \\
+\pi \leftarrow \proveappendonly(\pp,\AS_m, \AS_n):\\
+{\verappendonly(\vk, d_m, m, d_n, n, \pi) = T}
+\end{array} \right] \ge 1 - \negl(\lambda)
+\end{align*}
+\end{definition}
+
+\begin{definition}[AAS Append-only Security]
+\label{def:aas:appendonly-security}
+$\forall$ adversaries \Adv running in time $\poly(\lambda)$,
+\begin{align*}
+\Pr \left[ \begin{array}{c}
+(\pp,\vk) \leftarrow \setup(1^\lambda, \upperbound)\\
+(d_i,d_j,i < j,\pi_a, k,\pi,\pi') \leftarrow \Adv(1^\lambda, \pp, \vk)
+: \\
+{\verappendonly(\vk, d_i, i, d_j, j, \pi_a) = T} \wedge {}\\
+{\vermemb(\vk, d_i, k, 1, \pi )  = T} \wedge {}\\
+{\vermemb(\vk, d_j, k, 0, \pi') = T}
+\end{array} \right] \le \negl(\lambda)
+\end{align*}
+\end{definition}
+
+\noindent \textit{Observation:}
+This definition ensures that elements can only be added to an AAS.
+
+\begin{definition}[Fork Consistency]
+\label{def:aas:fork-consistency}
+$\forall$ adversaries \Adv running in time $\poly(\lambda)$,
+\begin{align*}
+\Pr \left[ \begin{array}{c}
+(\pp,\vk) \leftarrow \setup(1^\lambda, \upperbound)\\
+(d_i\ne d_i',d_j,i<j,\pi_i,\pi_i') \leftarrow \Adv(1^\lambda, \pp, \vk)
+: \\
+{\verappendonly(\vk, d_i , i, d_j, j, \pi_i) = T} \wedge {}\\
+{\verappendonly(\vk, d_i', i, d_j, j, \pi_i') = T}\\
+\end{array} \right] \le \negl(\lambda)
+\end{align*}
+\end{definition}
+
+\noindent \textit{Observation:}
+This is our own version of fork consistency that captures what is known in the literature about fork consistency~\cite{ht,LM07Beyond}.
+Specifically, it allows a server to fork the set at version $i$ by presenting two different digests $d_i$ and $d_i'$ and prevents the server from forging append-only proofs that ``join'' the two forks into some common digest $d_j$ at a later version $j$.

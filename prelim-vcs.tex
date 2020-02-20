@@ -1,0 +1,106 @@
+A \textit{vector commitment} (VC) scheme allows a \textit{prover} $P$ to compute a small \textit{commitment} $c$ of a \textit{vector of messages} $(m_i)_{i\in[n]}$ where $m_i\in \Fp$.
+The prover $P$ can \textit{open} the commitment: $P$ can reveal a message at a specific \textit{position} in the vector to a \textit{verifier} $V$ who has the commitment $c$.
+To ensure $P$ is not equivocating about the message at that position, $V$ checks a \textit{proof} against $c$.
+VCs also support efficiently updating proofs and the commitment after a vector update.
+We formalize VCs in \cref{s:prelim:vcs:defs}.
+
+VCs were first formalized by Catalano et al.~\cite{CF13}, although the notion of committing to multiple messages appears earlier in the literature~\cite{KZG10a,CFM08,LY10}.
+Kohlweiss and Rial~\cite{KR13} extend VCs with zero-knowledge protocols for proving correct computation of a new commitment, for opening messages at secret positions, and for proving secret updates of messages at secret position.
+Camenisch et al.~\cite{CDHK15} build VCs from KZG commitments (see \cref{s:prelim:polycommit:kzg}) and Lagrange polynomials (see \cref{s:prelim:interpolation}).
+Lai and Malavolta~\cite{LM18} formalize \textit{subvector commitments (SVCs)} which support opening not just a single message $m_i$ but any subset of messages $(m_i)_{i\in I}$ with positions from a set $I$.
+
+Chepurnoy et al.~\cite{CPZ18} instantiate VCs using multivariate polynomial commitments~\cite{PST13}.
+Boneh et al.~\cite{BBF19} instantiate VCs using hidden-order groups.
+Their construction has the advantage of having constant-sized public parameters.
+They also introduce \textit{key-value map commitments}, which support a larger set of positions such as $[0, 2^{2\lambda}]$ rather than just $[1,n]$, where $\lambda$ is a security parameter.
+Libert et al.~\cite{LRY16} generalize VCs to \textit{functional commitments (FCs)} which, instead of revealing the full message $m_i$ when opening, can reveal $f_{\vec{x}}(\vec{v})$ where $\vec{v} = (m_i)_{i\in[n]}$ is the committed vector and $f_{\vec{x}} : \Fp^n \rightarrow \Fp$ is any linear function of the form $f_{\vec{x}}(\vec{v}) = \sum_{i\in[n]} x_i m_i$.
+Lai and Malavolta~\cite{LM18} generalize FCs to \textit{linear map commitments (LMCs)} where the function can be any linear map $f : \Fp^n \rightarrow \Fp^q$ for some $q$.
+
+\subsection{Definitions}
+\label{s:prelim:vcs:defs}
+
+\subsubsection{VC API}
+We define vector commitment schemes below.
+Our definition is almost identical to Catalano and Fiore's~\cite{CF13}.
+\\
+
+\api $\vcsetup(1^\lambda, \ell)\rightarrow \pp,\vk$.
+Randomized algorithm that computes and returns public parameters $\pp$ and a verification key \vk given security parameter $\lambda$ and the maximum size $\ell$ of the vector.
+
+\api $\vccommit(\pp, (m_j)_{j\in[\ell]}) \rightarrow c,\mathsf{aux}$.
+Deterministic algorithm that returns a vector commitment $c$ to the sequence $(m_j)_{j\in[\ell]}$ of messages along with some \textit{auxiliary information} $\mathsf{aux}$ (typically consisting of the messages themselves).
+
+\api $\vcopen(\pp, m_i, i, \mathsf{aux}) \rightarrow \pi_i$.
+Deterministic algorithm that returns a proof $\pi_i$ that $m_i$ is the $i$th message in the vector.
+
+\api $\vcverify(\vk, c, m, i, \pi_i) \rightarrow T/F$.
+Deterministic algorithm that verifies the proof $\pi_i$ that $c$ commits to some sequence $m_1, ..., m_q$ where $m_i = m$.
+
+\api $\vcupdate(\pp, c, m, m', j)\rightarrow c'$.
+Deterministic algorithm that returns a new commitment $c'$ to the vector committed in $c$, except its $j$th message is changed from $m$ to $m'$.
+
+\api $\vcproofupdate(\pp, c, \pi_i, m, m', j)\rightarrow \pi'_i$.
+Suppose the $j$th message $m$ in $c$ was updated to $m'$ using $c' = \vcupdate(\pp,c,m,m',j)$.
+Given the old proof $\pi_i$ for the $i$th message in $c$, this deterministic algorithm updates it to a new proof $\pi'_i$ that verifies against $c'$.
+Note that $i$ can be equal to $j$.
+
+\subsubsection{Correctness and Security}
+
+\begin{definition}[Vector Commitment (VC) Scheme]
+    \label{def:vc}
+    (\vcsetup, \vccommit, \vcopen, \vcverify, \vcupdate, \vcproofupdate) is a secure \textit{vector commitment (VC) scheme} if
+    $\forall$ upper-bounds $\ell=\poly(\lambda)$
+    it satisfies the following properties:
+\end{definition}
+
+\begin{definition}[Opening Correctness]
+$\forall$ vectors $(m_j)_{j\in [\ell]}$, $\forall$ positions $i\in[\ell]$:
+\begin{align*}
+\Pr \left[ \begin{array}{c}
+\pp,\vk \leftarrow \vcsetup(1^\lambda, \ell), \\
+c,\mathsf{aux}\leftarrow \vccommit(\pp, (m_j)_{j\in [\ell]}),\\
+\pi_i \leftarrow \vcopen(\pp, m_i, i, \mathsf{aux}):\\
+\vcverify(\vk, c, m_i, i, \pi_i) = T
+\end{array} \right] \ge 1 - \mathsf{negl}(\lambda)
+\end{align*}
+\end{definition}
+
+\begin{definition}[Digest Update Correctness]
+$\forall$ vectors $\vec{v}=(m_j)_{j\in [\ell]}$, $\forall$ positions $i\in[\ell],k\in[\ell]$, $\forall$ messages $m_k'$, let $\vec{u}$ be the same vector as $\vec{v}$ except with $m_k'$ rather than $m_k$ at position $k$:
+\begin{align*}
+\Pr \left[ \begin{array}{c}
+\pp,\vk \leftarrow \vcsetup(1^\lambda, \ell), \\
+c, \mathsf{aux}\leftarrow \vccommit(\pp, \vec{v}),\\
+\hat{c}\leftarrow \vcupdate(\pp, c, m_k, m_k', k),\\
+c', \mathsf{aux'}\leftarrow \vccommit(\pp, \vec{u}):\\
+c' = \hat{c}
+\end{array} \right] \ge 1 - \mathsf{negl}(\lambda)
+\end{align*}
+\end{definition}
+
+\begin{definition}[Proof Update Correctness]
+$\forall$ vectors $(m_j)_{j\in [\ell]}$, $\forall$ positions $i\in[\ell],k\in[\ell]$, $\forall$ messages $m_k'$:
+\begin{align*}
+\Pr \left[ \begin{array}{c}
+\pp,\vk \leftarrow \vcsetup(1^\lambda, \ell), \\
+c,\mathsf{aux}\leftarrow \vccommit(\pp, (m_j)_{j\in [\ell]}),\\
+\pi_i \leftarrow \vcopen(\pp, m_i, i,\mathsf{aux}),\\
+c', \pi'_i \leftarrow \vcproofupdate(\pp, c, \pi_i, m_k, m_k', k):\\
+\vcverify(\vk, c', m_k', k, \pi'_i) = T
+\end{array} \right] \ge 1 - \mathsf{negl}(\lambda)
+\end{align*}
+\end{definition}
+
+\begin{definition}[Position Binding Security]
+\label{def:vc:position-binding-security}
+$\forall$ adversaries $\Adv$ running in time $\poly(\lambda)$:
+\begin{align*}
+\Pr \left[ \begin{array}{c}
+\pp,\vk \leftarrow \vcsetup(1^\lambda, \ell), \\
+(c,m,m',i,\pi,\pi') \leftarrow \Adv(1^\lambda, \pp): \\
+\vcverify(\vk, c, m, i, \pi) = T\ \wedge \\
+\vcverify(\vk, c, m', i, \pi') = T\ \wedge \\
+m \ne m'
+\end{array} \right] \le \mathsf{negl}(\lambda)
+\end{align*}
+\end{definition}

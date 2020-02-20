@@ -1,0 +1,77 @@
+\newcommand{\upperbound}{\ensuremath{B}\xspace}
+
+%
+% Scheme names
+%
+\newcommand{\biaas}{\ensuremath{\mathsf{AAS}_\mathsf{bilinear}}\xspace}
+\newcommand{\biaad}{\ensuremath{\mathsf{AAD}_\mathsf{bilinear}^{\mathsf{tall}}}\xspace}
+\newcommand{\biaadset}{\ensuremath{\mathsf{AAD}_\mathsf{bilinear}^{\mathsf{short}}}\xspace}
+
+\newcommand{\rsaaas}{\ensuremath{\mathsf{AAS}_\mathsf{rsa}}\xspace}
+\newcommand{\rsaaad}{\ensuremath{\mathsf{AAD}_\mathsf{rsa}^{\mathsf{tall}}}\xspace}
+\newcommand{\rsaaadset}{\ensuremath{\mathsf{AAD}_\mathsf{rsa}^{\mathsf{short}}}\xspace}
+
+%
+% Helpful terminology that might change later
+%
+\newcommand{\communionTree}{Communion Tree\xspace}
+\newcommand{\communionTrees}{Communion Trees\xspace}
+\newcommand{\prefixCommunionTree}{Prefix Communion Tree\xspace}
+\newcommand{\prefixCommunionTrees}{Prefix Communion Trees\xspace}
+\newcommand{\frontierCommunionTree}{Frontier Communion Tree\xspace}
+\newcommand{\frontierCommunionTrees}{Frontier Communion Trees\xspace}
+
+%
+% Append-only Auth. Set/Dictionary API
+%
+\newcommand{\setup}{\ensuremath{\mathsf{Setup}}\xspace}
+
+\newcommand{\append}{\ensuremath{\mathsf{Append}}\xspace}
+\newcommand{\multiappend}{\append^{+}}
+
+\newcommand{\proveappendonly}{\ensuremath{\mathsf{ProveAppendOnly}}\xspace}
+\newcommand{\verappendonly}{\ensuremath{\mathsf{VerAppendOnly}}\xspace}
+
+% AAS-specific
+\newcommand{\provememb}{\ensuremath{\mathsf{ProveMemb}}\xspace}
+\newcommand{\vermemb}{\ensuremath{\mathsf{VerMemb}}\xspace}
+
+% AAD-specific
+\newcommand{\provelookup}{\ensuremath{\mathsf{ProveLookup}}\xspace}
+\newcommand{\verlookup}{\ensuremath{\mathsf{VerLookup}}\xspace}
+
+%
+% Algorithms
+%
+\newcommand{\verpath}{\ensuremath{\mathsf{VerPath}}\xspace}
+\newcommand{\provepath}{\ensuremath{\mathsf{ProvePath}}\xspace}
+\newcommand{\proverootaccs}{\ensuremath{\mathsf{ProveRootAccs}}\xspace}
+\newcommand{\provefrontier}{\ensuremath{\mathsf{ProveFrontier}}\xspace}
+\newcommand{\verfrontier}{\ensuremath{\mathsf{VerFrontier}}\xspace}
+\newcommand{\accumulate}{\ensuremath{\mathsf{Accum}}\xspace}
+\newcommand{\createfrontier}{\ensuremath{\mathsf{CreateFrontier}}\xspace}
+
+%
+% Variables used in AAS algorithms
+%
+\newcommand{\elems}{\myblue{\mathbf{S}}}                     % notation for the set of elements at a certain node in the forest
+\newcommand{\hash}{\myblue{\mathbf{h}}}                      % notation for Merkle hash in the forest
+\newcommand{\acc}{\myblue{\mathbf{a}}}                       % notation for node accumulator commitment: \acc = g^{\accpoly(s)}
+\newcommand{\eacc}{\myblue{\hat{\mathbf{a}}}}                % for extractable counterpart of \eacc
+\newcommand{\subsetProof}{\myblue{\boldsymbol{\pi}}}
+\newcommand{\bft}{\myblue{\boldsymbol{\sigma}}}              % notation for frontier accumulator commitment (on the server side): \fac = g^{\fropoly(s)}
+\newcommand{\disj}{\myblue{\boldsymbol{\psi}}}               % notation for disjointness witness between a node accumulator and a frontier accumulator
+
+% Not global variables
+\newcommand{\charpoly}{\mathcal{C}}                 % characteristic polynomial of a set
+\newcommand{\accpoly}{\alpha}                       % notation for node accumulator polynomial
+\newcommand{\fropoly}{\phi}                         % notation for frontier accumulator 
+\newcommand{\fac}{o}                                % notation for frontier accumulator commitment (on the verifier side): \fac = g^{\fropoly(s)}
+\newcommand{\efac}{\hat{o}}                         % for extractabile counterpart of \fac
+\newcommand{\CP}{\chi}                              % completeness proof w.r.t. frontier accumulator
+
+%
+% Notation for AAS/AAD
+%
+\newcommand{\AS}{\mathcal{S}}       % authenticated set
+\newcommand{\AD}{\mathcal{D}}       % authenticated dictionary

@@ -1,0 +1,108 @@
+Membership and append-only correctness follow from close inspection of the algorithms. 
+Here, we prove our AAS construction offers membership and append-only security, as well as fork consistency.
+
+\subsubsection{Membership Security}
+\label{s:aas:from-bilinear-acc:proofs:membership-security}
+Assume there exists a polynomial-time adversary \Adv that produces digest $d$, element $k$ and inconsistent proofs $\pi,\pi'$ such that $\vermemb(VK,d,k,1,\pi)$ and $\vermemb(VK,d,k,0,\pi')$ both accept. 
+We describe how \Adv can either find a collision in $\Hb$ (used to hash the PCTs) or break the $q$-SBDH assumption.
+
+\begingroup
+\renewcommand{\myblue}[1]{\textcolor{black}{#1}}
+\renewcommand{\mathbf}[1]{#1}
+\renewcommand{\boldsymbol}[1]{#1}
+
+First, let us focus on the membership proof $\pi$, which consists of a path to $k$'s leaf in some PCT of size $2^\ell$ leaves.
+% Q: If the verifier computes the leaf prefix accumulator, what is the length of this path in a tree of $2^\ell$ leaves?
+% For example, say tree is of size 2^2 = 4, so it has 3 levels of nodes (i.e., 4 leaves + another 2 nodes at the next level + 1 root).
+% Then, the proof will send accumulators at the root level and the one below it + 2 subset witnesses (between leaf and its parent and between root and its child)
+Let $\acc_0,\acc_1,\dots,\acc_{\ell}$ be the prefix accumulators along this path (part of $\pi$), where $\acc_0$ is the leaf accumulator for element $k$ with characteristic polynomial $A_0(x) = \prod_{c \in \prefixes(k)}(x-\Hp(c))$.
+% Note that $a_\ell$ is the root prefix accumulator.
+Let $\pi_0, \dots, \pi_{\ell-1}$ denote the corresponding subset witnesses, such that $e(\acc_j, g) = e(\acc_{j-1}, \pi_{j-1}), \forall j \in [\ell]$.
+
+Second, let us consider the other (contradictory) non-membership proof $\pi'$, which consists of a path to a FCT leaf storing a prefix $\rho$ of $k$.
+Let $\fac_0, \fac_1,\dots,\fac_{\ell'}$ be the frontier accumulators along this path, where $\fac_0$ is the leaf accumulator for $\rho$ with characteristic polynomial $O_0(x) = x-\Hp(\rho)$.
+Note that this FCT is of size $2^{\ell'}$, which might differ from $2^\ell$, the size of $\pi$'s PCT.
+Let $\acc^*_\ell$ be the root prefix accumulator for this FCT's corresponding PCT, as contained in $\pi'$ (see \cref{a:aas:provememb}).
+
+When verifying $\pi$ and $\pi'$, both $\acc_\ell$ and $\acc^*_\ell$ are hashed (together with the two claimed hash values of their children) and the result is checked against the hash from digest $d$.
+Since verification of $\pi$ and $\pi'$ succeeds, if $\acc_\ell \neq \acc^*_\ell$ this would produce a collision in $\Hb$.
+
+Else, we argue as follows.
+Each prefix accumulator $\acc_1,\dots,\acc_\ell$ is accompanied by an extractability term $\eacc_1,\dots,\eacc_\ell$, which the client checks as $e(\acc_j,g^\tau)= e(\eacc_j,g)$ for $j\in[\ell]$ (see \cref{a:aas:verpath:extractability-check} in \cref{a:helper:verpath}).
+Hence, from the $q$-PKE assumption, it follows that there exists a polynomial-time algorithm that, upon receiving the same input as \Adv, outputs polynomials $(A_j(x))_{j\in[\ell]}$ (in coefficient form) such that $g^{A_j(s)} = \acc_j$ with all but negligible probability.
+The same holds for all frontier accumulators $\fac_1,\dots,\fac_{\ell'}$ and terms $\efac_1,\dots,\efac_{\ell'}$ included in $\pi'$, and let $(O_{j}(x))_{j\in[\ell']}$ denote their polynomials.
+
+% The key idea is that just because the accumulators pass the subset tests, it doesn't necesarily mean the extracted polynomials will also pass.
+We distinguish two cases and analyze them separately:
+\begin{itemize}
+    \item[(a)] $ (x-\Hp(\rho)) \nmid A_\ell(x)$ or $ (x-\Hp(\rho)) \nmid O_{\ell'}(x)$
+    \item[(b)] $ (x-\Hp(\rho)) \;|\; A_\ell(x)$ and $ (x-\Hp(\rho)) \;|\; O_{\ell'}(x)$
+\end{itemize}
+
+For case (a), without loss of generality we will focus on the $(x-\Hp(\rho)) \nmid A_\ell(x)$ sub-case.
+(The proof for the second sub-case proceeds identically.)
+% Important: This is when frontier accumulators must be extractable.
+% See how we treat first sub-case below.
+% The second sub-case would be the same except it would need to extract frontier polynomials].
+Observe that, by construction, $(x-\Hp(\rho)) \mathrel| A_0(x)$ and, by assumption, $(x-\Hp(\rho)) \nmid A_\ell(x)$.
+Thus, there must exist some index $0 < i \le \ell$ such that $(x-\Hp(\rho)) \mathrel| A_{i-1}(x)$ and $(x-\Hp(\rho)) \nmid A_i(x)$.
+% Why must there exist such an i?
+% We have a sequence of polynomilas A_0, A_1, \dots, A_\ell, where the first is divisible and the last isn't. 
+% There has to be an index where the polynomials "stop being divisible."
+% In the worst-case, they are divisible until A_\ell, in which case i = \ell.
+% In the best-case, they are only divisible at A_0, in which case i = 1.
+Note that $i$ can be easily deduced given all  $(A_j(x))_{j\in[\ell]}$.
+% Note that when $i = 1$, $(x-\Hp(\rho))$ always divides $A_0$ which is the characteristic polynomial of $k$'s prefixes.
+Therefore, by polynomial division there exist efficiently computable polynomials $q_{i}{(x)},q_{i-1}(x)$ and $\kappa\in \Fp$ such that: $A_{i-1}(x) = (x-\Hp(\rho))\cdot q_{i-1}(x)$ and $A_{i}(x) = (x-\Hp(\rho))\cdot q_{i}(x) + \kappa$.
+
+Now, during the verification of the $i$th subset witness, it holds that:
+\begin{align*}
+    e(\acc_i,g) &= e(\acc_{i-1},\pi_{i-1}) \Leftrightarrow\\
+    e(g^{A_i(s)},g) &= e(g^{A_{i-1}(s)},\pi_{i-1})\Leftrightarrow\\
+    e(g^{(s-\Hp(\rho))\cdot q_{i}(s) + \kappa},g) &= e(g^{(s-\Hp(\rho))\cdot q_{i-1}(s)},\pi_{i-1})\Leftrightarrow\\
+        e(g^{q_{i}(s) + \frac{\kappa}{(s-\Hp(\rho))}},g) &= e(g^{q_{i-1}(s)},\pi_{i-1})\Leftrightarrow\\
+        e(g^{\frac{\kappa}{(s-\Hp(\rho))}},g) &= e(g^{q_{i-1}(s)},\pi_{i-1})\cdot e(g^{-q_{i}(s)},g)\Leftrightarrow\\
+        e(g^{\frac{1}{(s-\Hp(\rho))}},g) &= \left[ e(g^{q_{i-1}(s)},\pi_{i-1})\cdot e(g^{-q_{i}(s)},g)\right]^{\kappa^{-1}}.
+\end{align*}
+Hence, the pair $(\Hp(\rho), \left[ e(g^{q_{i-1}(s)},\pi_{i-1})\cdot e(g^{-q_{i}(s)},g)\right]^{\kappa^{-1}})$ can be used to break the $q$-SBDH assumption.
+
+In case (b), by assumption, $(x-\Hp(\rho)) \mathrel| A_\ell(x)$ and $ (x-\Hp(\rho)) \mathrel| O_{\ell'}(x)$. 
+Therefore, by polynomial division there exist efficiently computable polynomials $q_A{(x)},q_o(x)$ such that: 
+$A_{\ell}(x) = (x-\Hp(\rho))\cdot q_A(x)$ and $O_{\ell'}(x) = (x-\Hp(\rho))\cdot q_o(x)$.
+Let $\disj = (y,z)$ be the disjointness witness from $\pi'$.
+Since $\disj$ verifies against accumulators $\acc_\ell$ and $\fac_{\ell'}$, it holds that:
+\begin{align*}
+    e(\acc_\ell,y) \cdot e(\fac_{\ell'},z) &= e(g,g) \Leftrightarrow\\
+    e(g^{A_\ell(s)},y) \cdot e(g^{O_{\ell'}(s)},z) &= e(g,g) \Leftrightarrow\\
+    e(g^{(s-\Hp(\rho))\cdot q_A(s)},y) \cdot     e(g^{(s-\Hp(\rho))\cdot q_o(s)},z) &= e(g,g)\Leftrightarrow\\
+    e(g^{q_A(s)},y) \cdot e(g^{q_o(s)},z) &= e(g,g)^{\frac{1}{(s-\Hp(\rho))}}.
+\end{align*}
+Thus, the pair $(\Hp(\rho), e(g^{q_A(s)},y) \cdot e(g^{q_o(s)},z))$ can again be used to break the $q$-SBDH assumption.
+
+\subsubsection{Append-only Security}
+\label{s:aas:from-bilinear-acc:proofs:append-only-security}
+We can prove append-only security with the same techniques used above. 
+Let $\rho$ be the prefix of $k$ used to prove non-membership w.r.t. the new digest $d_{j}$.
+The membership proof for $k$ w.r.t. the old digest $d_i$ again involves a series of prefix accumulators whose corresponding polynomials can be extracted.
+By our previous analysis, $(x-\Hp(\rho))$ must divide the polynomial extracted for the root prefix accumulator in $d_i$, otherwise the $q$-SBDH assumption can be broken.
+% In other words, this is case (a) of our membership security proof where we only use the prefix accumulators/polynomials to break $q$-SBDH
+Continuing on this sequence of subset witnesses, the append-only proof ``connects'' this old root prefix accumulator to a new root prefix accumulator in $d_{j}$.
+By the same argument, $(x-\Hp(\rho))$ must also divide the polynomial extracted for this new root prefix accumulator from $d_j$.
+Since non-membership also verifies, $(x-\Hp(\rho))$ must divide the extracted polynomial for the root frontier accumulator in $d_{j}$, or else $q$-SBDH can be broken.
+Finally, we apply the same argument as case (b) above, since $(x-\Hp(\rho))$ divides both these polynomials and we have a disjointness witness for their accumulators, again breaking $q$-SBDH.
+
+\subsubsection{Fork Consistency}
+\label{s:aas:from-bilinear-acc:proofs:fork-consistency}
+Assume there exists a polynomial-time adversary \Adv that breaks fork consistency, producing digests $d_i\ne d'_i$ with append-only proofs $\pi_i,\pi'_i$ to a new digest $d_j$.
+Since $d_i\ne d'_i$, there exists a root $r$ such that its hash $h_r$ in $d_i$ differs from its hash $h'_r$ in $d'_i$. % e.g., r = 00 in \cref{f:forest}
+Since $d_i$ and $d'_i$ get ``joined'' into $d_j$, let $r^*\neq r$ denote the ancestor root of $r$ in $d_j$.
+% e.g., r' = 0 \in cref{f:forest}
+(Note that $r^* \neq r$, since \verappendonly always makes sure that common roots between an old digest and a new digest have the same hash.) 
+% e.g., if proving F_2 and F_3 are append-only, then root 00 is 'common' between the two forests, and \verappendonly will ensure h_{00} remains the same in d_3. 
+% Therefore, we need only consider strict ancestors r^* of r.
+Now, note that both proofs $\pi_i,\pi'_i$ are Merkle proofs from node $r$ to $r^*$.
+Importantly, because every node $w$ is hashed together with its label $w$ (as $h_w = \Hb(w,h_{w|0},a_w,h_{w|1})$), the two Merkle proofs take the same path (i.e., $\treepath[r,r^*]$)!
+In other words, the adversary produced two Merkle proofs that (1) verify against the same digest $d_j$, (2) take the same path to the same leaf $r$, but (3) attest for different leaf hashes $h_r$ and $h_r'$.
+This breaks Merkle hash tree security and can be used to produce a collision in $\Hb$.
+
+\endgroup

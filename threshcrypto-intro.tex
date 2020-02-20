@@ -1,0 +1,116 @@
+\newcommand{\vssDkgPreviousWorkTable}{
+\begin{table}[h]
+    %\large
+    %\small
+    \footnotesize
+    %\scriptsize
+    \centering
+    %\vspace{1em}
+    %\vspace{2.2em}
+    \begin{tabular}{lcccccc}
+        %\toprule
+        {\makecell{Scheme}}
+        & \makecell{Dealing\\round\\time}
+        & \makecell{Verification\\round\\time}
+        & \makecell{Complaint\\round\\time}
+        & \makecell{Reconstruct\\time\\(no interpol.)}
+        & \makecell{Dealing\\communic.\\(broadcast)}
+        & \makecell{Dealing\\communic.\\(private)}\\
+        \toprule
+
+        Feldman VSS~\cite{Feldman87} & $n\log{n}$   & $t$          & \myred{$t^2$} & \myred{$nt$} & \myred{$t$} & $n$ \\
+        \jfdkg~\cite{GJKR07}         & $n\log{n}$   & \myred{$nt$} & \myred{$t^3$} & \myred{$nt$} & \myred{$t$} & $n$ \\
+        \evss ~\cite{KZG10a}         & \myred{$nt$} & $1$          & $t$           & $n$          & $1$         & $n$ \\
+        \ejfdkg~\cite{Kate2010}      & \myred{$nt$} & $n$          & \myred{$t^2$} &$n$           & $1$         & $n$ \\
+
+        \toprule
+
+        \textbf{\ourvss}   & $n\log{t}$ & $\log{t}$  & $t\log{t}$           & $n\log{t}$ & $1$ & $n\log{t}$ \\
+        \textbf{\ourdkg}   & $n\log{t}$ & $n\log{t}$ & \myred{$t^2\log{t}$} & $n\log{t}$ & $1$ & $n\log{t}$ \\
+    \end{tabular}
+    \caption{
+       Per-player \textit{worst-case} asymptotic complexity of $(t,n)$ VSS/DKG protocols.
+    }
+    \label{t:vss-dkg-comparison} % must go after \caption{} for \cref{} to work
+    %\toprule
+\end{table}
+}
+
+% For more motivation, see intro of: [ZI03] "Round optimal distributed key generation of threshold cryptosystem based on discrete logarithm problem"
+% "A great proportion of solutions to multiparty protocols turns out to be a crux of threshold cryptosystem scheme in constructing a distributed TTP: key recovery [24], signature escrow [15,23], contract signing [27], fair exchange of digital signatures [2], e-voting [9,19] and auction [6] schemes."
+
+Due to the popularity of cryptocurrencies, interest in Byzantine fault tolerant (BFT) systems has been steadily increasing~\cite{bitcoin,ethereum,GAG+19,algorand,dfinity,ouroboros,ouroboros-praos,ouroboros-genesis,randherd}.
+At the core of BFT systems often lie simpler threshold cryptosystems such as threshold signature schemes (TSS)~\cite{Boldyreva03,Shoup00}, verifiable secret sharing (VSS) protocols~\cite{Pedersen1991NonInteractive,CGMA85,KZG10a} and distributed key generation (DKG) protocols~\cite{Pedersen1991AThreshold,GJKR07,Kate2010}.
+For example, TSS and DKG protocols are used to scale consensus protocols~\cite{GAG+19,dfinity,constantinople}.
+Furthermore, DKG protocols~\cite{GJKR07} are used to securely generate keys for TSS~\cite{KG09}, to generate nonces for interactive TSS~\cite{SS01,GGN16}, and to build proactively-secure threshold cryptosystems~\cite{Herzberg1995ProactiveSecret,Herzberg1997ProactivePublic}.
+Finally, VSS is used to build multi-party computation (MPC) protocols~\cite{GRR98p}, random beacons~\cite{randherd,CD17a,ouroboros} and is the key component of DKG protocols.
+
+Despite their usefulness, TSS, VSS and DKG protocols do not scale well in important settings.
+For example, BFT systems often operate in the \textit{honest majority} setting, with $n$ total players where $t > n/2$ players must be honest.
+In this setting, \textit{$t$-out-of-$n$ threshold cryptosystems}, such as TSS, VSS and DKG, require time quadratic in $n$~\cite{Feldman87,Pedersen1991NonInteractive,KZG10a,Boldyreva03}.
+This is because of two reasons.
+% Note: At this point, it might not be clear to all readers that threshold cryptosystems reconstruct secrets, so we clarify below.
+First, reconstruction of secrets, a key step in any threshold cryptosystem, is typically implemented naively using $\Theta(t^2)$ time polynomial interpolation, even though faster algorithms exist~\cite{vG13ModernCh10}.
+This makes aggregating threshold signatures and reconstructing VSS or DKG secrets slow for large $t$.
+Second, either the dealing round, the verification round or the reconstruction phase in VSS and DKG protocols require $\Theta(nt)$ time.
+% e.g., Feldman VSS has $\Theta(nt)$ worst-case time to verify shares during reconstruction.
+Fundamentally, this is because current polynomial commitment schemes require $\Theta(nt)$ time to either compute or verify all proofs~\cite{Feldman87,Pedersen1991NonInteractive,KZG10a}.
+In this thesis, we address both of these problems.
+
+\paragraph{Contributions.}
+
+Our first contribution is a BLS TSS~\cite{Boldyreva03} with $\Theta(t\log^2{t})$ aggregation time, $\Theta(1)$ signing and verification times and $\Theta(1)$ signature size (see \cref{s:threshsig}).
+In contrast, previous schemes had $\Theta(t^2)$ aggregation time (see \cref{s:related-work:tss}).
+We implement our fast BLS TSS in C++ and show it outperforms the naive BLS TSS as early as $n\ge \blsOutperformN$ and scales to $n$ as large as 2 million (see \cref{s:eval:threshsig}).
+At that scale, we can aggregate a signature \blsTimeImprovFriendly{2097151} faster in \blsEffTimeFriendly{2097151} compared to \blsNaiveTimeFriendly{2097151} if done naively.
+Our fast BLS TSS leverages a $\Theta(t\log^2{t})$ time \textit{fast Lagrange} interpolation algorithm~\cite{vG13ModernCh10}, which outperforms the $\Theta(t^2)$ time \textit{naive} \textit{Lagrange} algorithm.
+
+\vssDkgPreviousWorkTable
+
+Our second contribution is a space-time trade-off for computing evaluation proofs in \textit{KZG polynomial commitments}~\cite{KZG10a} (see \cref{s:amt}).
+KZG commitments are quite powerful in that their size and the time to verify an evaluation proof are both constant and do not depend on the degree of the committed polynomial.
+We show how to compute $n$ evaluation proofs on a degree $t$ polynomial in $\Theta(\amtDealTime)$ time.
+Each proof is of size $\floor{\log{t}}-1$ group elements.
+Previously, each proof was just one group element but computing all proofs required $\Theta(nt)$ time.
+Our key technique is to authenticate a polynomial multipoint evaluation at the first $n$ roots of unity (see \cref{s:prelim:fft}), obtaining an \textit{authenticated multipoint evaluation tree (AMT)}.
+Importantly, similar to KZG proofs, our AMT proofs remain homomorphic (see \cref{s:scalable-dkg:homomorphic-amt}), which is useful when we apply them to distributed key generation (DKG) protocols.
+Finally, AMTs give rise to a new \textit{vector commitment (VC)} scheme~\cite{CF13,CPZ18} as we discuss in \cref{s:vcs:from-amt}.
+
+Our third contribution is \ourvss, a scalable VSS with a $\Theta(n\log{t})$ time sharing phase, an $O(t\log^2{t}+n\log{t})$ time reconstruction phase, $\Theta(1)$-sized broadcast (during dealing round) and $\Theta(n\log{t})$ overall communication.
+% Note: Dealer broadcasts a KZG commitment during dealing and { batch proof (or < t KZG proofs) + < t shares } during the complaint round
+\ourvss improves over previous VSS protocols which, in the worst case, incur $\Theta(nt)$ computation.
+However, this improvement comes at the cost of slightly higher verification times and communication (see \cref{t:vss-dkg-comparison}).
+Nonetheless, in \cref{s:threshcrypto:eval}, we show \ourvss outperforms \evss~\cite{KZG10a}, the most communication-efficient VSS, as early as $n=\vssOutperformBcN$. 
+Importantly, \ourvss is highly scalable. 
+For example, for $n\approx 2^{17}$, we reduce the best-case end-to-end time of \evss from \evssVssEndToEndBcTimeFriendly{131071} to \amtVssEndToEndBcTimeFriendly{131071}.
+
+Our fourth contribution is \ourdkg, a DKG with a $\Theta(n\log{t})$ time sharing phase (except for its quadratic time complaint round), an $O(t\log^2{t}+n\log{t})$ time reconstruction phase, a $\Theta(1)$-sized broadcast (during dealing round) and $\Theta(n\log{t})$ per-player dealing communication.
+\ourdkg improves over previous DKGs which, in the worst case, incur $\Omega(nt)$ computation.
+% Specifically:
+%  - in JF-DKG, dealing is efficient, best-case verification is efficient, but worst-case reconstruction is inefficient
+%  - in eJF-DKG, dealing is inefficient
+%  - in AMT DKG, everything is efficient
+Once again, this improvement comes at the cost of slightly higher verification times and communication (see \cref{t:vss-dkg-comparison}).
+Nonetheless, in \cref{s:threshcrypto:eval}, we show \ourdkg outperforms \ejfdkg~\cite{Kate2010}, the most communication-efficient DKG, as early as $n=\dkgOutperformBcN$.
+% Note: AMT VSS is slower than AMT DKG in the ``best case'' due to best-case VSS reconstruction needing to verify $t$ shares.
+For $n\approx 2^{17}$, we reduce the best-case end-to-end time of \ejfdkg from \ejfDkgEndToEndBcTimeFriendly{131071} to \amtDkgEndToEndBcTimeFriendly{131071}.
+
+Our last contribution is an open-source implementation:
+\begin{center}
+\url{https://github.com/alinush/libpolycrypto/}
+\end{center}
+
+\paragraph{Limitations.}
+Our work only addresses TSS, VSS and DKG protocols secure against \textit{static} adversaries.
+% WARNING: I keep forgetting that NBB16 withstands only static adversaries.
+% WARNING: SJSW19 says they are adaptively-secure but I don't see an argument as to why/how.
+However, \textit{adaptive security} can be obtained, albeit with some overheads\cite{CGJ+99,Feldman87,AF04,FMY99,JL00}.
+We only target \textit{synchronous} VSS and DKG protocols, which make strong assumptions about the delivery of messages.
+However, recent work~\cite{SJSW19} shows how to instantiate such protocols using the Ethereum blockchain~\cite{ethereum}.
+Our VSS and DKG protocols require a \textit{trusted setup} (see \cref{s:prelim:trusted-setup}).
+Our evaluation only measures the computation in VSS and DKG protocols and does not measure network delays that would arise in a full implementation on a real network.
+Our techniques slightly increase the communication overhead of VSS and DKG protocols from $\Theta(n)$ to $\Theta(n\log{t})$.
+However, when accounting for the time savings, the extra communication is worth it.
+Still, we acknowledge communication is more expensive than computation in some settings.
+Finally, we do not address the worst-case quadratic overhead of complaints in DKG protocols.
+We leave scaling this to future work.

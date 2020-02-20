@@ -1,0 +1,19 @@
+Our constructions in \cref{s:aads,s:threshcrypto} are secure under the $\ell$-S(B)DH (see \cref{def:q-sdh,def:q-sbdh}) and $\ell$-PKE assumptions (see \cref{def:q-pke}) which require \textit{public parameters} of the form:
+\begin{align*}
+\PPsdh_\ell(g; \tau)        &= \langle g,g^\tau, g^{\tau^2},\dots,g^{\tau^\ell} \rangle\\
+\PPpke_\ell(g; \tau,\beta)  &= \langle g,g^\tau, g^{\tau^2},\dots,g^{\tau^\ell},g^{\beta\tau}, g^{\beta\tau^2},\dots,g^{\beta\tau^\ell}\rangle
+\end{align*}
+This begs the question: Who generates these public parameters?
+If the answer were ``a single party generates them,'' then that party would have to be trusted to safely discard and forget the trapdoor $\tau$.
+This would create a single point of failure, which we would like to avoid.
+
+Ideally, a multi-party computation (MPC) protocol~\cite{GMW87} should be used to generate the parameters.
+The protocol would be run by $n$ parties and guarantee that, as long as one party discards their ``share'' of $\tau$, the other $n-1$ parties cannot recover $\tau$.
+Fortunately, previous work~\cite{zcash-mpc1,zcash-mpc2} shows how to do exactly this for SNARK public parameters~\cite{groth10,groth16}.
+Since our public parameters are a ``subset'' of SNARK parameters, we can leverage simplified versions of these protocols.
+In particular, the protocol from~\cite{zcash-mpc2} makes participation very easy: it allows any number of players to join, participate and optionally drop out of the protocol.
+In contrast, the first protocol~\cite{zcash-mpc1} required a fixed, known-in-advance set of players.
+
+Finally, the practicality of such MPC protocols has already been demonstrated.
+In 2016, six participants used~\cite{zcash-mpc1} to generate public parameters for the Sprout version of the Zcash cryptocurrency~\cite{zcash}.
+Two years later, nearly 200 participants used~\cite{zcash-mpc2} to generate new public parameters for the newer Sapling version of Zcash.

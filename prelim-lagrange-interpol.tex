@@ -1,0 +1,26 @@
+Given $d$ pairs $(x_i, y_i)_{i\in[d]}$, we can find (or \textit{interpolate}) the unique, degree-bound $d$ polynomial $\phi$ such that $\phi(x_i) = y_i, \forall i\in[d]$ using \textit{Lagrange interpolation}~\cite{BT04}.
+First, we compute \textit{Lagrange polynomials} $\Ell_i(x)$ for all $i\in [d]$:
+\begin{align}
+\Ell_i(x) &= \prod_{\substack{j\in [d]\\j\ne i}}\frac{x-x_j}{x_i-x_j}
+\end{align}
+Note that $\forall i\in[d], \Ell_i(x_i) = 1$ and $\forall i\in[d],\forall j\ne i, \Ell_i(x_j)=0$.
+Then, we can interpolate $\phi$ as:
+\begin{align}
+\phi(x) &= \sum_{i\in[d]} \Ell_i(x) y_i
+\end{align}
+It is easy to see that $\forall i\in [d], \phi(x_i) = y_i$:
+\begin{align*}
+\phi(x_i) &= \sum_{j\in[d]} \Ell_j(x_i) y_j\\
+          &= \Ell_i(x_i)y_i + \sum_{\substack{j\in[d]\\j\ne i}} \Ell_j(x_i) y_j\\
+          &= 1 \cdot y_i + \sum_{\substack{j\in[d]\\j\ne i}} 0 \cdot y_j\\
+          &= y_i
+\end{align*}
+
+Because the interpolated polynomial is unique, this means a degree-bound $d$ polynomial $\phi$ can be interpolated from \textit{any} $d$ evaluations $(x_i, \phi(x_i))_{i\in[d]}$.
+This property was used by Shamir~\cite{Shamir79} to construct secret sharing schemes (see \cref{s:prelim:vss}) and we use it frequently in this thesis in \cref{s:threshcrypto}.
+
+As described here, Lagrange interpolation can be very slow, since it requires computing all $d$ degree-bound $d$ Lagrange polynomials.
+% Computing an \Ell_i(x) means doing 1 + 2 + 3 + ... + d ~= d^2 work to multiply the monomials in the numerator.
+If done naively, this takes $O(d^3)$ time.
+Fortunately, faster $\Theta(d\log^2{d})$ algorithms exist~\cite{vG13ModernCh10} which leverage fast polynomial multiplication, division and multipoint evaluation (see \cref{s:prelim:multipoint-eval}).
+In \cref{s:threshsig}, we adapt one of these algorithms to speed up threshold signature schemes.

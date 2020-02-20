@@ -1,0 +1,15 @@
+/README.html
+/*.pdf
+*.aux
+*.bbl
+*.blg
+*.log
+*.lof
+*.lot
+*.toc
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.out
+/TODO.html
+*.synctex.gz(busy)

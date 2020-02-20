@@ -1,0 +1,144 @@
+In this section, we introduce \textit{proofs of knowledge of exponent}, which we use in \cref{s:aas:from-rsa-acc} to build append-only authenticated sets and dictionaries.
+Informally, these protocols allow a prover to convince a verifier that the prover knows a potentially-large $x$ such that $g^x = y$ without having to reveal $x$.
+All protocols in this section are proven secure in~\cite{BBF18} under the adaptive root assumption~\cite{Wesolowski19} and in the generic group model for hidden-order groups~\cite{DK02}, except for PoE (see \cref{s:prelim:poe}) which does not use the generic group model.
+All of the protocols explained in this section are \textit{interactive} but can be easily made non-interactive via the Fiat-Shamir heuristic in the random oracle model (ROM)~\cite{FS87}.
+
+% Q: Wesolowski19 has Primes(2\lambda) whereas BBF uses Primes(\lambda). What gives?
+
+\subsection{Proof of Exponentiation (PoE)}
+\label{s:prelim:poe}
+Wesolowski introduced a \textit{proof of exponentiation} (PoE) protocol for checking that an exponentiation $u^x = w$ with $x=2^t$ was performed correctly in a hidden-order group.
+Importantly, this protocol allows a verifier to check much faster than naively redoing the exponentiation~\cite{Wesolowski19}.
+When $x$ is very large, as often happens in applications such as RSA accumulators, this protocol saves verifiers a significant amount of time.
+Boneh et al.~\cite{BBF19} show Wesolowski's protocol generalizes to any $x\in \Z$.
+We detail their protocol below.
+(Recall from \cref{s:prelim:aads} that $\primes(\lambda)$ denotes the set of all $\lambda$-bit prime numbers.)
+\\
+
+\noindent \textbf{Input:} $u,w\in \GroupHidOrd$, $x\in \Z$
+
+\noindent \textbf{Claim:} $u^x = w$
+\begin{itemize}
+\item Verifier sends $\ell \in_R \primes(\lambda)$ to prover.
+\item Prover divides $x$ by $\ell$, obtaining integers $q\in \Z,r\in [0,\ell)$ such that $x = q\ell + r$.
+\item Prover sends proof $Q=u^{q}\in \GroupHidOrd$ to the verifier.
+\item Verifier computes $r = (x \bmod \ell) \in [0, \ell)$ and accepts proof if $Q^\ell u^{r} = w$.
+\end{itemize}
+
+This PoE protocol is proven secure in~\cite{Wesolowski19} under the Adaptive Root Assumption in hidden-order groups (see \cref{def:adaptive-root}).
+
+\paragraph{Computational Cost.}
+The prover needs to divide an $|x|$-bit number by a $\lambda$-bit number and exponentiate by a $(|x|-\lambda)$-bit quotient $q$.
+The verifier must (1) pick a random $\lambda$-bit prime, which involves multiple expensive primality tests (2) compute a big division of an $|x|$-bit number by a $\lambda$-bit number and (3) do two exponentiations with $\lambda$-bit exponents.
+When made non-interactive via the Fiat-Shamir heuristic~\cite{FS87}, the cost of picking a random $\lambda$-bit prime is shifted to the prover.
+
+\subsection{Proof of Knowledge of Exponent for Fixed Base $g$ (\pokestar)}
+\label{s:prelim:pokestar}
+Boneh et al.~\cite{BBF19} transform the PoE protocol from above into a \textit{proof of knowledge}~\cite{GMR85} of an $x$ such that $g^x = w$.
+They call this protocol \pokestar.
+A caveat is that \pokestar requires a \textit{common reference string} (CRS) that fixes the base $g$.
+This restriction is later removed in \cref{s:prelim:poke2}.\\
+
+\noindent \textbf{Common Reference String (CRS):} A generator $g$ of $\GroupHidOrd$
+
+\noindent \textbf{Input:} $w\in \GroupHidOrd$, $x\in \Z$
+
+\noindent \textbf{Claim:} $g^x = w$
+\begin{itemize}
+\item Verifier sends $\ell \in_R \primes(\lambda)$ to prover.
+\item Prover divides $x$ by $\ell$, obtaining integers $q\in \Z,r\in [0,\ell)$ such that $x = q\ell + r$.
+\item Prover sends proof $(Q=g^{q},r)$ to verifier.
+\item Verifier accepts proof  if (1) $r \in [0, \ell)$ and (2) $Q^\ell g^{r} = w$.
+\end{itemize}
+
+The \pokestar protocol is proven secure in the generic group model for hidden-order groups (see ``Proof of Theorem 7'' in Appendix C.2 in~\cite{BBF18}).
+
+\paragraph{Computational Cost.}
+For the prover, the cost remains the same as in PoE (see \cref{s:prelim:poe}).
+However, the cost decreases for the verifier, who no longer has to divide $x$ by $\ell$.
+
+\subsection{Proof of Knowledge of Exponent for Any Base $u$ (\poke)}
+\label{s:prelim:poke}
+
+As pointed out in~\cite{BBF19}, the \pokestar protocol from \cref{s:prelim:poke} only works for group generators $g$ that are part of the \textit{common reference string} (CRS).
+In other words, it does not work for proving knowledge of an $x$ such that $u^x = w$ for \textit{arbitrary} $u\in \GroupHidOrd$.
+To see why, consider an attacker who sets $u=g^a$ and $w=g^b$ with $b\ne 1$ but who cannot compute the discrete log $x=\log_u(w) = a/b$ because he cannot invert $b$.
+Clearly, such an attacker should not be able to construct a valid \pokestar proof for knowing $x=a/b$, yet he can do so as follows.
+
+First note that, with overwhelming probability, the challenge $\ell$ is co-prime with $a$.
+Thus, the attacker can compute \bezout coefficients $q',r'$ such that $q'\ell + r' a = 1$.
+Then, he can compute $q=b q', r = b r'$ such that $q\ell + ra = b$.
+This implies that:
+\begin{align}
+q\ell + ra &= b\Leftrightarrow\\
+g^{q\ell + ra} &= g^b\Leftrightarrow\\
+(g^{q})^\ell (g^a)^r &= w\Leftrightarrow\\
+(g^{q})^\ell u^r &= w
+\label{eq:pokestar:fakeproof}
+\end{align}
+
+Notice that \cref{eq:pokestar:fakeproof} exactly matches the \pokestar proof verification equation in \cref{s:prelim:pokestar}.
+Thus, the attacker has successfully forged a \pokestar proof $(Q=g^q, r)$ for knowing the discrete log $x=\log_u(w)$.
+
+To fix this, Boneh et al. propose a new \poke protocol~\cite{BBF19}.
+The key idea is to have the prover do two \pokestar proofs in parallel: one for $u^x = w$ and one for $g^x = z$.
+This protocol is detailed below.\\
+
+\noindent \textbf{Common Reference String (CRS):} A generator $g$ of \GroupHidOrd
+
+\noindent \textbf{Input:} $u,w\in \GroupHidOrd$, $x\in \Z$
+
+\noindent \textbf{Claim:} $u^x = w$
+\begin{itemize}
+\item Prover sends $z = g^x$ to the verifier.
+\item Verifier sends $\ell \in_R \primes(\lambda)$ to prover.
+\item Prover divides $x$ by $\ell$, obtaining integers $q\in \Z,r\in [0,\ell)$ such that $x = q\ell + r$.
+\item Prover sends proof $(Q=u^q,Q'=g^q, r)$.
+\item Verifier accepts proof  if (1) $r \in [0, \ell)$, (2) $Q^\ell u^{r} \stackrel{?}{=} w$ and (3) $Q'^\ell g^{r} \stackrel{?}{=} z$.
+\end{itemize}
+
+\poke proofs are 3 group elements $(z,Q,Q')$ and one $\ell$-bit integer $r$, while \pokestar proofs are just one group element and one $\ell$-bit integer.
+The next \poketwo protocol reduces the proof size and also removes the need for a CRS.
+\poke is proven secure in the generic group model where the adaptive root assumption holds (see ``Proof of Theorem 3'' in Appendix C.2 in~\cite{BBF18}).
+
+\paragraph{Computational Cost.}
+Compared to \pokestar, the prover cost increases by two big $O(|x|)$-bit exponentiations (for computing $z$ and $Q'$) and the verifier cost increases by two small $\lambda$-bit exponentiations (for computing $Q'^\ell$ and $g^r$).
+
+\subsection{PoK of Exponent for Any Base $u$ Without a CRS (\poketwo)}
+This protocol reduces \poke's proof size and eliminates the CRS by having the verifier pick $g$ randomly.
+It also results in a 2$\times$ faster prover, at the cost of making verification 1.5$\times$ slower.
+This is a good trade-off for applications where proving time, not verification time, is the bottleneck (e.g., our AAS and AAD in \cref{s:aas:from-rsa-acc,s:aad:from-acc}).
+The intuition behind \poketwo is to combine the two \pokestar proofs for $g^x$ and $u^x$ into a single one via a linear combination with a random $\alpha$.
+\\
+
+\label{s:prelim:poke2}
+\noindent \textbf{Input:} $u,w\in \GroupHidOrd$, $x\in \Z$
+
+\noindent \textbf{Claim:} $u^x = w$
+\begin{itemize}
+\item Verifier sends $g\in_R \GroupHidOrd$ to prover.
+\item Prover sends $z = g^x$ to the verifier.
+\item Verifier sends $\ell \in_R \primes(\lambda) $ and $\alpha \in [0, 2^\lambda)$ to prover.
+\item Prover divides $x$ by $\ell$, obtaining integers $q\in \Z,r\in [0,\ell)$ such that $x = q\ell + r$.
+\item Prover sends proof $(Q=(ug^{\alpha})^q, r)$.
+\item Verifier accepts proof if (1) $r \in [0, \ell)$ and (2) $Q^\ell u^{r} g^{\alpha r} \stackrel{?}{=} w z^{\alpha}$
+\end{itemize}
+
+Note that:
+\begin{align*}
+Q^\ell u^r g^{\alpha r} 
+ &= (u^qg^{\alpha q})^\ell u^r g^{\alpha r}\\
+ &= u^{q\ell} g^{\alpha q\ell} u^r g^{\alpha r}\\
+ &= u^{q\ell+r} g^{\alpha q\ell + \alpha r}\\
+ &= u^{x} g^{\alpha x}\\
+ &= w z^\alpha
+\end{align*}
+
+The proof is $(z, Q, r)$: two group elements and a $\lambda$-bit number $r$.
+Finally, the \poketwo protocol is proven secure in the generic group model (see ``Proof of Theorem 3'' in Appendix C.2 in~\cite{BBF18}).
+
+\paragraph{Computational Cost.}
+Compared to \pokestar (see \cref{s:prelim:pokestar}), the prover cost increases by one big $O(|x|)$-bit exponentiations (for computing $z$) and one small $\lambda$-bit exponentiation (for computing $g^\alpha$).
+This is 2$\times$ more efficient than the \poke prover from \cref{s:prelim:poke}.
+The verifier cost increases by three small $\lambda$-bit exponentiations (for $(g^\alpha)^r$ and for $z^\alpha$).
+This is 1.5$\times$ slower than the \poke verifier.

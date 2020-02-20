@@ -1,0 +1,106 @@
+\newcommand{\evssAlgorithm}{
+\setlist[enumerate]{leftmargin=15pt, itemsep=.3pt}
+\setlist[itemize]{leftmargin=*, itemsep=.3pt}
+\begin{algorithm}[t] % single column algorithm
+    \caption{\small \evss: A synchronous $(t,n)$ VSS}
+    \label{alg:vss}
+    \footnotesize
+
+    \vspace{.2em}
+    \begin{center}
+        \textbf{Sharing Phase}
+    \end{center}
+    \vspace{-.5em}
+    \underline{Dealing round:}
+    \begin{enumerate}
+        \item The dealer picks $\phi\in_R \Fp[X]$ of degree $t-1$ with $s = \phi(0)$, computes all shares $s_i = \phi(i)$, and commits to $\phi$ as $c = g^{\phi(\tau)}$.
+        \item Computes KZG proofs $\pi_i = g^{q_i(\tau)}$, $q_i(x) = \frac{\phi(x)-\phi(i)}{x-i}$, $\forall i\in[n]$.
+        \item \textit{Broadcasts} $c$ to all players. Then, sends $(s_i, \pi_i)$ to each player $i\in[n]$ over an \textit{authenticated, private} channel.
+    \end{enumerate}
+    \underline{Verification round:}
+    \begin{enumerate}
+        \item Each player $i\in [n]$ verifies $\pi_i$ against $c$ by checking if $e(c / g^{s_i}, g) = e(\pi_i, g^{\tau-i})$.
+              If this check fails (or $i$ received nothing from dealer), then $i$ broadcasts a \textit{complaint} against the dealer.
+    \end{enumerate}
+%    \underline{Complaint round (w/ KZG batch proofs):}
+%    \begin{enumerate}
+%        \item If the size of the set $S$ of complaining players is $\ge t$, then the dealer is \textit{disqualified}.
+%              Otherwise, the dealer computes a \textit{KZG batch proof} $\pi$ for all $\{s_i\}_{i\in S}$ and broadcasts $(S, \{s_i\}_{i\in S}, \pi)$.
+%              % In some sense, the round has finished after the KZG batch proof was broadcast, and the verification work done below
+%              % should be considered as part of a new round. But since this verification is not followed by another broadcast, it is not considered as a new round.
+%        \item If the batch proof does not verify, then the dealer is disqualified. Otherwise, each $i\in S$ now has his correct share $s_i$.
+%    \end{enumerate}
+    \underline{Complaint round:}
+    \begin{enumerate}
+        \item If the size of the set $S$ of complaining players is $\ge t$, the dealer is \textit{disqualified}.
+              Otherwise, the dealer reveals the correct shares with proofs by broadcasting $\{s_i, \pi_i\}_{i\in S}$.
+              % In some sense, the round has finished after the KZG batch proof was broadcast, and the verification work done below
+              % should be considered as part of a new round. But since this verification is not followed by another broadcast, it is not considered as a new round.
+        \item If any one proof does not verify (or dealer did not broadcast), the dealer is disqualified. Otherwise, each $i\in [n]$ now has his correct share $s_i$.
+    \end{enumerate}
+
+    \begin{center}
+        \textbf{Reconstruction Phase}
+    \end{center}
+    \vspace{-.5em}
+    Given commitment $c$ and shares $(i, s_i,\pi_i)_{i\in T}$, $|T|\ge t$, the \textit{reconstructor}:
+    \begin{enumerate}
+        \item Verifies each $s_i$, identifying a subset $V$ of $t$ players with valid shares.
+        \item Interpolates $s=\sum_{i\in V} \Ell_i^V(0) s_i=\phi(0)$.
+    \end{enumerate}
+\end{algorithm}
+}
+
+A $(t,n)$ \textit{secret sharing} scheme allows a \textit{dealer} to split up a secret $s$ amongst $n$ \textit{players} such that \textit{only} subsets of size $\ge t$ players can reconstruct $s$.
+Secret sharing schemes were introduced independently by Shamir~\cite{Shamir79} and Blakley~\cite{Blakley79}.
+In this thesis, we focus on \textit{Shamir's secret sharing (SSS)} protocol and its extensions.
+
+SSS is split into two phases.
+In the \textit{sharing phase}, the dealer picks a degree $t-1$, random, univariate polynomial $\phi$, lets $s=\phi(0)$ and distributes a \textit{share} $s_i = \phi(i)$ to each player $i\in [n]$.
+In the \textit{reconstruction phase}, any subset $T\subset [n]$ of $t$ honest players can reconstruct $s$ by sending their shares to a \textit{reconstructor}.
+(This can be one of the players, or another 3rd party.)
+For each $i\in T$, the reconstructor computes a \textit{Lagrange coefficient} $\Ell_i^T(0) = \prod_{j\in T, j\ne i} {\frac{0-j}{i - j}}$.
+Then, he computes the secret as $s = \phi(0) = \sum_{i\in T} \Ell_i^T(0) s_i$ via Lagrange interpolation (see \cref{s:prelim:interpolation}).
+
+% Q: What if dealer picks polynomial of degree less than $t-1$ and commits to it? The Kate et al. commitment doesn't reveal the degree.
+% A: The answer is that secrecy is only guaranteed for *honest* dealers, since a dishonest dealer can always give some of the players the secret.
+%
+% Q: What if dealer picks polynomial of degree t or higher? Then different subsets of t players will reconstruct different secrets.
+% A: Dealer can't do this because of the $(t-1)$-polyDH assumption.
+Unfortunately, SSS does not tolerate malicious dealers who distribute invalid shares, nor malicious players who might send invalid shares during reconstruction.
+To deal with this, \textit{Verifiable Secret Sharing (VSS)} protocols enable players to verify shares from a potentially-malicious dealer~\cite{CGMA85,Feldman87,Pedersen1991NonInteractive,KZG10a}.
+Furthermore, VSS also enables the reconstructor to verify the shares before interpolating the (wrong) secret.
+
+Loosely speaking, VSS protocols must offer two properties against any adversary who compromises the dealer and $<t$ players: \textit{secrecy} and \textit{correctness}.
+Secrecy guarantees that no adversary learns the secret $s$ when the dealer is honest, since a malicious one can simply reveal $s$.
+Correctness guarantees that, after the sharing phase, either any set of $\ge t$ honest players can always reconstruct $s$ or the dealer is \textit{disqualified}.
+We refer the reader to~\cite{KZG10a} for more formal VSS definitions. %, since our paper extends Kate et al.'s \evss.
+
+\evssAlgorithm
+
+% Typically the round complexity of VSS means the round complexity of the sharing phase:
+% For example, \evss has 1 round for the dealer to broadcast the commitment and send shares.
+% Then, another round for the players to send their complaints.
+% Then, another round for the dealer to send back a batch proof for all complaining players.
+% In ~\cite{BKP11}, a 2-round VSS is presented, surprisingly.
+
+\subsection{Kate et al.'s \evss}
+\label{s:prelim:evss}
+At a high-level, \evss follows the style of previous VSS protocols~\cite{Feldman87,Pedersen1991NonInteractive}.
+In the \textit{dealing round}, the dealer commits to $\phi$ and sends each player their share and \textit{proof} that their share is correct.
+In the \textit{verification round}, each player verifies the proof for his share and, if incorrect, broadcasts a \textit{complaint}.
+Finally, in the \textit{complaint round}, the dealer resolves complaints (if any) by broadcasting the correct share of each complaining player.
+We give a detailed description of \evss in \cref{alg:vss} and its asymptotic complexity in \cref{t:vss-dkg-comparison}.
+
+From \cref{alg:vss}, \evss's \textit{overall communication} complexity is $\Theta(n)$ (since at most $2n+(t-1)$ shares and proofs are sent while dealing, complaining and reconstructing).
+\evss's reconstruction phase is $O(t\log^2{t} + n)$ time, since at most $n$ shares have to be verified before the secret can be interpolated fast in $\Theta(t\log^2{t})$ time~\cite{vG13ModernCh10}.
+\evss's dealing round is $\Theta(nt)$ time, since $n$ KZG proofs must be computed.
+% Note: We point out in the Evaluation section that the evaluations $\phi(i)$ are obtained ``for free'' during this proof computation.
+% (It does not matter in terms of asymptotics, just concrete performance.)
+The verification round is $\Theta(1)$ time (per player).
+If $S$ is the set of complaining players, the complaint round takes $\Theta(|S|)$ time and communication for the dealer to send $|S|$ shares with proofs and $\Theta(|S|)$ time for each player to verify them.
+\evss's \textit{end-to-end time}, consisting of the sharing phase and reconstruction phase time, is $\Theta(nt)$.
+
+% Note: In practice, \evss and Feldman's VSS~\cite{Feldman1987Practical} take the same amount of overall \textbf{asymptotic} time, because \evss just shifts the high verification cost of Feldman's VSS into the sharing phase.
+% During reconstruction, for example, Feldman takes $\Theta(nt)$.
+% But Feldman can be implemented on faster curves, so it is faster.

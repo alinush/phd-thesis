@@ -1,0 +1,72 @@
+\paragraph{Notation.}
+% Note: Recall that a (total) function maps every element in its domain. 
+% Its range are all the values that are mapped to some domain key.
+% Its codomain are all the possible values in the universe, including unmapped ones. 
+% In contrast, partial function does not map every element in the domain.
+We introduce some helpful notation for (authenticated) sets and dictionaries, which are the focus of this part of the thesis.
+Let $\primes(\lambda)$ denote the set of all $\lambda$-bit prime numbers.
+Let $|S|$ denote the number of elements in a multiset $S$ (e.g., $S=\{1,2,2\}$ and $|S|=3$).
+For dictionaries, let $\mathcal{K}$ be the set of all possible keys and $\mathcal{V}$ be the set of all possible values.
+($\mathcal{K}$ and $\mathcal{V}$ are application-specific; e.g., in software transparency, a key is the software package name and a value is the hash of a specific version of this software package.)
+Let $\mathcal{P}(\mathcal{V})$ denote all possible multisets with elements from $\mathcal{V}$.
+Let $K\subset \mathcal{K}$.
+Then, a \textit{dictionary} is a function $D : K \rightarrow \mathcal{P}(\mathcal{V})$ that maps a key $k\in K$ to a multiset of values $V\in\mathcal{P}(\mathcal{V})$ (including the empty set).
+Let $D(k)$ denote the multiset of values associated with key $k$ in dictionary $D$.
+Let $|D|$ denote the number of key-value pairs in the dictionary.
+We also refer to this as the \textit{version} of the dictionary.
+Appending $(k,v)$ to a version $i$ dictionary updates the multiset $V = D(k)$ of key $k$ to $V' = V \cup \{v\}$ and increments the dictionary version to $i+1$.
+Finally, let $\varepsilon$ denote the empty string.
+
+\section{Cryptographic Assumptions}
+\label{s:prelim:hidden-order-groups}
+% Q: Must these hidden-order groups be cyclic? Is g in Strong RSA assumption a generator?
+Some of the results in this thesis (see \cref{s:aas:from-rsa-acc}) are based on cryptosystems which use \textit{hidden-order groups} such as $\ZNstar=\{a \mid \gcd(a,N) = 1\}$ where $N=pq$ is the product of two primes~\cite{rsa}.
+Let $\GroupHidOrd \leftarrow \grouphosetup(1^\lambda)$ denote an algorithm for generating such groups, where $\lambda$ is a security parameter.
+In addition to classical assumptions, such as the \textit{discrete log (DL) assumption} and the \textit{RSA assumption}, this thesis relies on the \textit{Strong RSA assumption} and the \textit{Adaptive Root assumption}, which we describe below.
+
+\subsection{Strong RSA Assumption}
+\label{s:prelim:strong-rsa}
+
+\begin{definition}[Strong RSA Assumption]
+\label{def:strong-rsa}
+$\forall$ adversaries \Adv running in time $\poly(\lambda)$:
+\begin{align*}
+    \Pr \left[\begin{array}{c}
+        \GroupHidOrd \leftarrow \grouphosetup(1^\lambda), g \in_R \GroupHidOrd,\\
+        (u, e) \leftarrow \Adv(1^\lambda, \GroupHidOrd, g):\\
+        u^e = g\ \text{and}\ e\ \text{is prime}
+    \end{array}
+    \right] \le \negl(\lambda)
+\end{align*}
+\end{definition}
+
+Informally, this assumption says that no computationally-bounded adversary can compute \textit{any} $e$th prime root of a random element $g$.
+This is a generalization of the RSA assumption which says that, for a \textit{fixed} $e$, no computationally-bounded adversary can compute an $e$th root of a random $g$.
+
+\subsection{Adaptive Root Assumption}
+\label{s:prelim:adaptive-root-assumption}
+
+% See Section 6.1: The Root Finding Problem
+This assumption was introduced by Wesolowski~\cite{Wesolowski19}.
+
+\begin{definition}[Adaptive Root Assumption]
+\label{def:adaptive-root}
+$\forall$ adversaries $\Adv=(\Adv_0,\Adv_1)$ running in time $\poly(\lambda)$:
+\begin{align*}
+    \Pr \left[\begin{array}{c}
+        \GroupHidOrd \leftarrow \grouphosetup(1^\lambda),\\
+        (w, \mathsf{state}) \leftarrow \Adv_0(1^\lambda, \GroupHidOrd),\\
+        e \in_R \primes(\lambda),\\
+        u \leftarrow \Adv_1(1^\lambda, e, \mathsf{state}):\\
+        {u^e = w} \wedge {w\ne 1}
+    \end{array}
+    \right] \le \negl(\lambda)
+\end{align*}
+\end{definition}
+
+For this assumption to hold, there cannot be any known-order elements in $\GroupHidOrd$.
+This means $\GroupHidOrd = \ZNstar$ should \textbf{not} be used directly.
+Instead, $\ZNstar \backslash \{\pm 1\}$ should be used, as described in ~\cite{BBF19}.
+Finally, note that the Adaptive Root Assumption and the Strong RSA Assumption (see \cref{def:strong-rsa}) are incomparable.
+In the former, the adversary picks the base and is asked to compute a specific, randomly-picked root of that base.
+In the latter, the adversary is randomly given a base and asked to compute \textit{any} prime root of that base.

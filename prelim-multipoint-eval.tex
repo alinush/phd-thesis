@@ -1,0 +1,91 @@
+\newcommand{\showdiv}[2]{#2}
+\newcommand{\quoNode}[1]{\myred{#1}}
+\newcommand{\leafRem}[1]{\myblue{\mathbf{#1}}}
+
+\newcommand{\multipointEvalExample}{
+%\begin{landscape}
+%\begin{figure*}[h]
+\begin{sidewaysfigure}
+{
+    %\tiny
+    %\scriptsize
+    %\footnotesize
+    \small
+    %\normalsize
+    \begin{center}
+    \begin{forest}
+    for tree={
+    %    fit=band,% spaces the tree out a little to avoid collisions
+    %    fit=tight,% spaces the tree out less
+    %    fit=rectangle,
+        inner sep=4,
+    }
+    [{\showdiv{$r_{1,8} = \phi \bmod (x-1)(x-2)\dots(x-8)$}{$\phi = \quoNode{q_{1,8}} (x-1)(x-2)\dots(x-8) + r_{1,8}$}}
+        [{\showdiv{$r_{1,4} = r_{1,8} \bmod (x-1)(x-2)\dots(x-4)$}{$r_{1,8} = \quoNode{q_{1,4}} (x-1)(x-2)\dots(x-4) + r_{1,4}$}}
+            [{\showdiv{$r_{1,2} = r_{1,4} \bmod (x-1)(x-2)$}{$r_{1,4} = \quoNode{q_{1,2}} (x-1)(x-2) + r_{1,2}$}}
+                [{\showdiv{$r_{1,1} = r_{1,2} \bmod (x-1)$}{$r_{1,2} = \quoNode{q_{1,1}} (x-1) + \leafRem{r_{1,1}}$}}
+                    [, no edge, tier=odd ]
+                ]
+                [{\showdiv{$r_{2,2} = r_{1,2} \bmod (x-2)$}{$r_{1,2} = \quoNode{q_{2,2}} (x-2) + \leafRem{r_{2,2}}$}}, tier=odd
+                ]
+            ]
+            [{\showdiv{$r_{3,4} = r_{1,4} \bmod (x-3)(x-4)$}{$r_{1,4} = \quoNode{q_{3,4}}(x-3)(x-4) + r_{3,4}$}}
+                [{\showdiv{$r_{3,3} = r_{3,4} \bmod (x-3)$}{$r_{3,4} = \quoNode{q_{3,3}}(x-3) + \leafRem{r_{3,3}}$}}
+                    [, no edge, tier=odd ]
+                ]
+                [{\showdiv{$r_{4,4} = r_{3,4} \bmod (x-4)$}{$r_{3,4} = \quoNode{q_{4,4}}(x-4) + \leafRem{r_{4,4}}$}}, tier=odd
+                ]
+            ]
+        ]
+        [{\showdiv{$r_{5,8} = r_{1,8} \bmod (x-5)(x-6)\dots(x-8)$}{$r_{1,8} = \quoNode{q_{5,8}} (x-5)(x-6)\dots(x-8) + r_{5,8}$}} 
+            [{\showdiv{$r_{5,6} = r_{5,8} \bmod (x-5)(x-6)$}{$r_{5,8} = \quoNode{q_{5,6}}(x-5)(x-6) + r_{5,6}$}} 
+                [{\showdiv{$r_{5,5} = r_{5,6} \bmod (x-5)$}{$r_{5,6} = \quoNode{q_{5,5}}(x-5) + \leafRem{r_{5,5}}$}}
+                    [, no edge, tier=odd ]
+                ]
+                [{\showdiv{$r_{6,6} = r_{5,6} \bmod (x-6)$}{$r_{5,6} = \quoNode{q_{6,6}}(x-6) + \leafRem{r_{6,6}}$}}, tier=odd
+                ]
+            ]
+            [{\showdiv{$r_{7,8} = r_{5,8} \bmod (x-7)(x-8)$}{$r_{5,8} = \quoNode{q_{7,8}}(x-7)(x-8) + r_{7,8}$}} 
+                [{\showdiv{$r_{7,7} = r_{7,8} \bmod (x-7)$}{$r_{7,8} = \quoNode{q_{7,7}}(x-7)+\leafRem{r_{7,7}}$}}
+                    [, no edge, tier=odd ]
+                ]
+                [{\showdiv{$r_{8,8} = r_{7,8} \bmod (x-8)$}{$r_{7,8} = \quoNode{q_{8,8}}(x-8)+\leafRem{r_{8,8}}$}}, tier=odd
+                ]
+            ]
+        ]
+    ]
+    \end{forest}
+    \end{center}
+} % end of \tiny\scriptisize\whatever
+
+\caption{A multipoint evaluation of polynomial $\phi$ at points $\{1,2,\dots, 8\}$.
+    Each node is expressed as $a = q \cdot b + r$: i.e., a polynomial $a$ is being divided by $b$, resulting in a \textit{quotient} $q$ and a \textit{remainder} $r$.
+    In the root node, $\phi$ is divided by the root \textit{accumulator} $\prod_{i\in[8]}(x-i)$, obtaining a quotient $q_{1,8}$ and a remainder $r_{1,8}$.
+    Then, the root's left child divides $r_{1,8}$ by $(x-1)\cdots(x-4)$ while the right child divides it by $(x-5)\cdots(x-8)$.
+    The process is repeated recursively on the resulting $r_{1,4}$ and $r_{5,8}$ remainders.
+    The remainders $r_{i,i}$ in the leaves are the evaluations $\phi(i)$.}
+\label{f:multipoint-eval}
+%\end{figure*}
+\end{sidewaysfigure}
+%\end{landscape}
+} % end of \newcommand
+
+\multipointEvalExample
+
+\cref{s:threshcrypto} of this thesis builds upon \textit{polynomial multipoint evaluation} techniques~\cite{vG13ModernCh10}.
+Given a degree $t$ polynomial $\phi$, naively evaluating it at $n > t$ points $x_1, \dots, x_n$ requires $\Theta(nt)$ time.
+This is fast when $t$ is very small relative to $n$ but can be slow when $t \approx n$, as is the case in many instantiations of threshold cryptosystems.
+Fortunately, a multipoint evaluation reduces this time to $O(n\log^2{n})$ using a divide and conquer approach.
+Specifically, one first computes $\phi_L(x)=\phi(x) \bmod (x-x_1)(x-x_2)\cdots(x-x_{n/2})$ and then $\phi_R(x)=\phi(x) \bmod (x-x_{n/2+1})(x-x_{n/2+2})\cdots(x-x_n)$
+Then, one simply recurses on the two \textit{half-sized} subproblems: evaluating $\phi_L(x)$ at $x_1, x_2, \dots, x_{n/2}$ and $\phi_R(x)$ at $x_{n/2+1}, x_{n/2+2},\dots x_n$.
+Ultimately, the leaves of this recursive computation store $\phi(x) \bmod (x-x_i)$, which is exactly $\phi(i)$ by the polynomial remainder theorem (see \cref{f:multipoint-eval}).
+
+For example, consider the multipoint evaluation of $\phi$ at $\{1,2,\dots,8\}$, which we depict in \cref{f:multipoint-eval}.
+We start at the root node $\varepsilon$.
+Here, we divide $\phi$ by the \textit{accumulator polynomial} $(x-1)(x-2)\dots(x-8)$ obtaining a \textit{quotient polynomial} $q_{1,8}$ and \textit{remainder polynomial} $r_{1,8}$.
+Then, its left and right children divide $r_{1,8}$ by the left and right ``half'' of $(x-1)(x-2)\dots(x-8)$, respectively.
+This proceeds recursively: each node $w$ divides $r_\parent(w)$ by its accumulator $a_w$, obtaining a quotient $q_w$ and remainder $r_w$ such that $r_{\parent(w)} = q_w a_w + r_w$.
+% Note: Technically, if n > t, the accumulators close to the top of the tree will not be necessary, so some time could be saved there.
+Note that all accumulator polynomials $a_w$ can be computed in $O(n\log^2{n})$ time by starting with the $(x-i)$ monomials as leaves of a binary tree and ``multiplying up the tree.''
+Since division by a degree-bound $n$ accumulator takes $O(n\log{n})$ time, the total time is $T(n)=2T(n/2)+O(n\log{n}) = O(n\log^2{n})$~\cite{vG13ModernCh10}.
+%At each level $i$ in this tree ($i=0$ is the root), $2^i$ divisions are performed between polynomials of degree $t/2^i$ and $n/2^i$ in time $O\left(n/2^i \log{\left(n/2^i\right)}\right)$.

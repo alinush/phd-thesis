@@ -1,0 +1,153 @@
+\newcommand{\rsaPrecompFigure}{
+\begin{figure*}[t]
+%\begin{sidewaysfigure}
+{
+    %\tiny
+    %\scriptsize
+    %\footnotesize
+    %\small
+    \normalsize
+    %\large
+    \begin{center}
+        \begin{forest}
+        for tree={
+        %    fit=band,% spaces the tree out a little to avoid collisions
+        %    fit=tight,% spaces the tree out less
+        %    fit=rectangle,
+            inner sep=4,
+        }
+        [{$g, \{e_1,\dots,e_8\}$}
+            [{$g^{e_5 \cdots e_8}, \{e_1,\dots,e_4\}$}
+                [{$g^{e_3 \cdots e_8}, \{e_1,e_2\}$}
+                    [{$g^{e_2 \cdots e_8}, \{e_1\}$}
+                        [, no edge, tier=odd ]
+                    ]
+                    [{$g^{e_1 e_3 \cdots e_8}, \{e_2\}$}
+                        , tier=odd
+                    ]
+                ]
+                [{$g^{e_1 e_2 e_5 \cdots e_8}, \{e_3,e_4\}$}
+                    [{$g^{e_1 e_2 e_4 \cdots e_8}, \{e_3\}$}
+                        [, no edge, tier=odd ]
+                    ]
+                    [{$g^{e_1 \cdots e_3, e_5 \cdots e_8}, \{e_4\}$}
+                        , tier=odd
+                    ]
+                ]
+            ]
+            [{$g^{e_1 \cdots e_4}, \{e_5,\dots,e_8\}$}
+                [{$g^{e_1 \cdots e_4 e_7 e_8}, \{e_5,e_6\}$}
+                    [{$g^{e_1 \cdots e_4 e_6 \cdots e_8}, \{e_5\}$}
+                        [, no edge, tier=odd ]
+                    ]
+                    [{$g^{e_1 \cdots e_5 e_7 e_8}, \{e_6\}$}
+                        , tier=odd
+                    ]
+                ]
+                [{$g^{e_1 \cdots e_6}, \{e_7,e_8\}$}
+                    [{$g^{e_1 \cdots e_6 e_8}, \{e_7\}$}
+                        [, no edge, tier=odd ]
+                    ]
+                    [{$g^{e_1 \cdots e_7}, \{e_8\}$}
+                        , tier=odd
+                    ]
+                ]
+            ]
+        ]
+        \end{forest}
+    \end{center}
+}
+\caption{Divide-and-conquer approach by Sander et al.~\cite{SSY01} for precomputing $n$ membership witnesses for $T=\{e_1,\dots,e_n\}$ w.r.t. the RSA accumulator $\mathsf{acc}(T)$ in $\Theta(n\log{n})$ time. Here $n=8$.}
+\label{f:rsa-acc-membproof-precomp}
+\end{figure*}
+%\end{sidewaysfigure}
+}
+
+Benaloh and de Mare~\cite{acc-rsa} were the first to introduce the notion of cryptographic accumulators and to instantiate it as \textit{RSA accumulators} via the Strong RSA assumption~\cite{BP97}.
+Bari\'{c} and Pfitzmann~\cite{BP97} showed RSA accumulators are not just one-way functions but also collision-resistant.
+Sander et al.~\cite{SSY01} showed how to efficiently precompute all witnesses in RSA accumulators in quasilinear time.
+Li et al.~\cite{LLX07} extended RSA accumulators with non-membership witnesses.
+Boneh et al.~\cite{BBF19} added support for computing and verifying witnesses in batch, for aggregating multiple witnesses into one and for union witnesses.
+
+RSA accumulators have several advantages over bilinear accumulators.
+First, RSA accumulators have constant-sized parameters, whereas bilinear accumulators need $q$-SDH public parameters (see \cref{def:q-sdh}) for committing to sets of size $\le q$.
+Second, RSA accumulators do not require trusted setup if instantiated over \textit{class groups}~\cite{BBF19,Lipmaa2012} rather than the integers modulo $N$ where $N=pq$ is the product of two, unknown primes.
+Third, RSA accumulators support precomputing all constant-sized membership witnesses in quasilinear time, which we discuss below.
+
+RSA accumulators also have a few disadvantages.
+First, committing to a set of size $n$ involves performing a big, $\lambda n$-bit sized exponentiation, which is inherently difficult to speed up via multi-threading.
+(Indeed, this difficulty is leveraged to implement verifiable delay functions (VDFs)~\cite{Wesolowski19,Pietrzak2018,Boneh2018ASurvey}.)
+Second, membership witnesses are much larger than in bilinear accumulators (e.g., 256 bytes versus 32 bytes when $|N|=2048$ bits).
+Third, they do not support subset and disjointness witnesses, which we introduce in this thesis in \cref{s:aas:from-rsa-acc:rsa-acc-enhance}.
+
+\paragraph{Setup.}
+Unlike bilinear accumulators (see \cref{s:prelim:bilinear-acc}) which work over groups of prime (known) order, RSA accumulators work over \textit{hidden-order groups} such as the subgroup of quadratic residues $\QRN$ of $\ZNstar$ where $N=pq$ is the product of two primes.
+We assume such a hidden-order group $\GroupHidOrd$ with generator $g$ has been set up.
+For example, if this group is $\QRN$, we assume nobody knows the factorization of $N$.
+(In \cref{s:prelim:trusted-setup-rsa}, we discuss how this can be achieved.)
+
+\paragraph{Committing to a Set.}
+Let $T = \{e_1, e_2, \dots, e_n\}$ denote a set of elements.
+For RSA accumulators, the elements $e_i$ must be \textit{prime numbers}.
+In particular, we will restrict ourselves to elements that are $2\lambda$-bit prime numbers.
+A collision-resistant hash function (CRHF) $\Hprime$ can be used to map any elements from any domain to such $2\lambda$-bit primes.
+To commit to $T$, one simply computes:
+$$\mathsf{acc}(T) = g^{\prod_{e_i\in T} e_i}$$
+
+\paragraph{Membership Witnesses.}
+A membership witness for $e_i$ is just an RSA accumulator over $T\setminus\{e_i\}$:
+$$\pi=\mathsf{acc}(T\setminus\{e_i\}) = g^{\prod_{e_j\in T\setminus\{e_i\}} e_j} = \mathsf{acc}(T)^{1/e_i}$$
+Importantly, note that the witness $\pi$ cannot be computed efficiently by exponentiating $\mathsf{acc}(T)$ by $1/e_i$.
+This is because $e_i^{-1}$ cannot be efficiently computed ``in the exponent'' of $\GroupHidOrd$, which is a hidden-order group.
+Thus, the membership witness must be computed in a less efficient manner as:
+$$g^{\prod_{e_j\in T\setminus\{e_i\}} e_j}$$
+For this, the prover must do $n-1$ small, $2\lambda$-bit-sized exponentiations, which takes $\Theta(n)$ time.
+(Alternatively, the prover can do one big, $\lambda (n-1)$-bit-sized exponentiation, which takes the same amount of time.)
+
+To verify the membership witness for $e_i$, a verifier with $\mathsf{acc}(T)$ checks that:
+\begin{align}
+    \pi^{e_i} &= \mathsf{acc}(T) \Leftrightarrow\\
+    \mathsf{acc}(T\setminus\{e_i\})^{e_i} &= \mathsf{acc}(T) \Leftrightarrow\\
+    \left(\mathsf{acc}(T)^{1/e_i}\right)^{e_i} &= \mathsf{acc}(T) \Leftrightarrow\\
+    \mathsf{acc}(T) &= \mathsf{acc}(T)
+\end{align}
+This way, membership witnesses can be verified in constant-time with a single exponentiation.
+Membership witnesses can be proven secure under the Strong RSA assumption (see \cref{def:strong-rsa}).
+RSA accumulators also support non-membership witnesses~\cite{LLX07}, but this thesis does not make (direct) use of them.
+
+\paragraph{Membership Witness Aggregation.}
+Boneh et al.~\cite{BBF19} show how to \textit{aggregate} two membership witnesses for two distinct elements into a single witness.
+Specifically, given $\pi_1, \pi_2$ for elements $e_1$ and $e_2$ respectively, a single witness $\pi$ for the two elements can be obtained as follows.
+First, \bezout coefficients $a,b$ such that $a e_1 + b e_2 = 1$ are calculated using the Extended Euclidean Algorithm (EEA).
+Then, the aggregated witness is computed as $\pi=\pi_1^b \pi_2^a$.
+To verify this aggregated witness, the verifier checks that $\pi^{e_1 e_2} = \mathsf{acc}(T)$.
+
+To see why this works, note that $\pi$ is indeed equal to $\mathsf{acc}(T)^{\frac{1}{e_1 e_2}}$:
+\begin{align*}
+\pi &= \pi_1^b \pi_2^a\Leftrightarrow\\
+              &= \left(\mathsf{acc}(T)^{1/e_1}\right)^b \left(\mathsf{acc}(T)^{1/e_2}\right)^a \Leftrightarrow\\
+              &= \mathsf{acc}(T)^{b/e_1+a/e_2} \Leftrightarrow\\
+              &= \mathsf{acc}(T)^{\frac{b e_2}{e_1 e_2}+\frac{a e_1}{e_1 e_2}} \Leftrightarrow\\
+              &= \mathsf{acc}(T)^\frac{b e_2 + a e_1}{e_1 e_2} \Leftrightarrow\\
+              &= \mathsf{acc}(T)^\frac{1}{e_1 e_2}
+\end{align*}
+
+Note that although aggregating proofs saves communication, the verification time remains as slow as verifying all the individual witnesses.
+For example, in a hidden-order group, the $\pi^{e_1\cdot e_2}$ exponentiation is as slow as the individual $\pi_1^{e_1}$ and $\pi_2^{e_2}$ exponentiations since $e_1 \cdot e_2$ cannot be ``reduced'' in the exponent.
+However, as pointed out in \cite{BBF19}, the verification time can be sped up using a proof of exponentiation (see \cref{s:prelim:poe}), although at the cost of a higher aggregation time.
+
+\rsaPrecompFigure
+
+\paragraph{Divide-and-Conquer Trick for Precomputing Membership Witnesses Fast.}
+Even though computing a single membership witness takes $\Theta(n)$ time in an RSA accumulator, computing all $n$ membership witnesses can be done in $\Theta(n\log{n})$ time~\cite{SSY01}.
+Without loss of generality, assume $n=2^m$ for some $m>0$.
+The algorithm's starting input is the generator $g$ (i.e., the accumulator of the empty set) and the set $T$ of $n$ elements for which witnesses must be precomputed.
+Let $T_L$ and $T_R$ of size $n/2$ each denote the left and right ``halves'' of $T$.
+The algorithm computes one RSA accumulator $a_L$ over $T_L$ and another accumulator $a_R$ over $T_R$ in $\Theta(n)$ time.
+Then, the algorithm calls itself recursively: first with $a_R$ and $T_L$ as input, and second with $a_L$ and $T_R$ as input.
+As shown in \cref{f:rsa-acc-membproof-precomp}, this recursive computation produces a membership witness for each element $e_i$.
+
+\paragraph{Subset and Disjointness Witnesses.}
+Boneh et al.~\cite{BBF19} introduced new techniques for batching and aggregating (non)membership witnesses in RSA accumulators.
+Although they introduce \textit{union witnesses}, which can be easily modified into a subset witness, they do not explicitly introduce disjointness witnesses.
+In \cref{s:aas:from-rsa-acc:rsa-acc-enhance}, we show how to use their techniques to obtain disjointness witnesses and a more efficient subset witness.

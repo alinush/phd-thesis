@@ -1,0 +1,7 @@
+\begin{definition}[$\ell$-Polynomial Diffie-Hellman (polyDH) Assumption]
+\label{def:q-polydh}
+Given as input security parameter $1^\lambda$, bilinear pairing parameters $\langle \Group, \GT, p, g, e\rangle \leftarrow \groupkosetup(1^\lambda)$ (see \cref{def:bilinear-pairing-parameters}),
+public parameters $\PPsdh_\ell(g;\tau)=\langle g, g^\tau, g^{\tau^2}, \dots, g^{\tau^\ell}\rangle$ where $\ell = \poly(\lambda)$ and $\tau$ is chosen uniformly at random from $\Zp^*$, no probabilistic polynomial-time adversary can output $(\phi(x), g^{\phi(\tau)}) \in \Zp[X]\times \Group$, such that $\ell < \deg{\phi} < 2^\lambda$, except with probability negligible in $\lambda$.
+% Q: Why does KZG condition 2^\lambda > \deg{\phi}? Could a PPT adversary ever output such a polynomial?
+% A: I guess it could, depending on the format, because such a polynomial could have lots of zero coefficients which don't need to be outputted.
+\end{definition}

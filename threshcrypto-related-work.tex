@@ -1,0 +1,108 @@
+% Desmedt and Frankel~\cite{DesmedtFrankel1990Threshold} were the first to instantiate threshold encryption using ElGamal encryption~\cite{ElGamal1985APublicKey} and Shamir secret sharing~\cite{how-to-share-a-secret}.
+% Later on, Desmedt and Frankel~\cite{DesmedtFrankel1992SharedGeneration} introduced the first RSA-based threshold signature.
+% Shoup introduced a more practical RSA-based threshold signature~\cite{Shoup2000Practical}.
+% Harn introduced the first ElGamal-based threshold signature~\cite{Harn1994GroupOriented}.
+
+\subsection{Threshold Signature Schemes (TSS)}
+\label{s:related-work:tss}
+
+Threshold signatures and threshold encryption were first conceptualized by Desmedt~\cite{Desmedt87}, who proposed inefficient constructions based on generic multi-party computation (MPC) protocols~\cite{GMW87}.
+Desmedt and Frankel later efficiently instantiated these ideas via a threshold-variant of ElGamal encryption~\cite{DF90}.
+Since then, many threshold signatures based on \textit{Shamir secret sharing} (see \cref{s:prelim:vss}) have been proposed~\cite{DesmedtFrankel1992SharedGeneration,Shoup00,Harn94,GJKR96,SS01,Boldyreva03,GGN16,PK96}.
+To the best of our knowledge, none of these schemes addressed the $\Theta(t^2)$ time required for polynomial interpolation.
+Furthermore, all current BLS TSS~\cite{Boldyreva03} implementations seem to use this quadratic algorithm~\cite{bls-chia-impl,bls-sbft-impl,bls-dfinity-impl,bls-herumi-impl} and thus do not scale to large $t$.
+In contrast, our work uses $\Theta(t\log^2{t})$ fast Lagrange interpolation and scales to $t = 2^{20}$ (see \cref{s:threshsig}).
+
+An alternative to a TSS is a \textit{multi-signature scheme (MSS)}.
+Unlike a TSS, an MSS does not have a unique, constant-sized public key (PK) against which all final signatures can be verified.
+Instead, the PK is dynamically computed given the contributing signers' IDs and their public keys.
+This means that a $t$-out-of-$n$ MSS must include the $t$ signer IDs as part of the signature, which makes it $\Omega(t)$-sized.
+Furthermore, MSS verifiers must have all signers' PKs, which are of $\Omega(n)$ size.
+To fix this, the PKs can be Merkle-hashed but this now requires including the PKs and their Merkle proofs as part of the MSS~\cite{STV+16}.
+(This communication overhead can be addressed by using a more communication-efficient vector commitment scheme~\cite{CF13}, but only by introducing additional computational overhead.)
+On the other hand, an MSS is much faster to aggregate than a TSS.
+Still, due to its $\Omega(t)$ size, an MSS does not always scale.
+
+\subsection{Verifiable Secret Sharing (VSS)}
+\label{s:related-work:vss}
+VSS protocols were introduced by Chor et al.~\cite{CGMA85}.
+Feldman proposed the first efficient, non-interactive VSS with computational hiding and information-theoretic binding~\cite{Feldman87}.
+Pedersen introduced its counterpart with information-theoretic hiding and computational binding~\cite{Pedersen1991NonInteractive}.
+Both schemes require a $\Theta(t)$-sized broadcast during dealing.
+
+Kate et al.'s \evss reduced this to $\Theta(1)$ using constant-sized polynomial commitments~\cite{KZG10a}.
+\evss also reduced the verification round time from $\Theta(t)$ to $\Theta(1)$.
+However, \evss's $\Theta(nt)$ dealing time scales poorly when $t\approx n$.
+Our work improves \evss to $\Theta(\amtDealTime)$ dealing time at the cost of \amtOneShareVerifTime verification round time.
+We also increase communication from $\Theta(n)$ to \amtAllShareVerifTime (see \cref{t:vss-dkg-comparison}).
+%(The dealing time in Feldman's and Pedersen's VSS is $\Theta(n\log{n})$ because they must evaluate a degree $t-1$ polynomial at $n$ points, which they can do with an FFT.)
+% While Pedersen and Feldman's VSS incurred $\Theta(nt)$ time for all players to verify their shares, Kate et al.'s VSS just shifts this cost to the dealer.
+
+\subsection{Publicly-Verifiable Secret Sharing (PVSS)}
+\label{s:related-work:pvss}
+
+Stadler proposed publicly verifiable secret sharing (PVSS) protocols~\cite{Stadler1996Publicly} where any \textit{external verifier} can verify the VSS protocol execution.
+As a result, PVSS is less concerned with players individually and efficiently verifying their shares, instead enabling external verifiers to verify all players' (encrypted) shares.
+Schoenmakers proposed an efficient $(t,n)$ PVSS protocol~\cite{Schoenmakers1999} where dealing is $\Theta(n\log{n})$ time and external verification of all shares is $\Theta(nt)$ time, later improved to $\Theta(n)$ time by Cascudo and David~\cite{CD17a}.
+Unfortunately, when the dealer is malicious, PVSS still needs $\Theta(nt)$ computation during reconstruction.
+Furthermore, PVSS might not be a good fit in protocols with a large number of players.
+In this setting, it might be better to base security on a \textit{large}, threshold number of honest players who individually and efficiently verify their own share rather than on a \textit{small} number of external verifiers who must each do $\Omega(n)$ work.
+Indeed, recent work explores the use of VSS within BFT protocols \textit{without} external verifiers~\cite{BTA+19}.
+Nonetheless, our \ourvss protocol can be easily modified into a PVSS since an AMT for all $n$ proofs can be batch-verified in $\Theta(n)$ time (see \cref{s:scalable-vss:reconstruction}).
+
+% Note: First person to pose the DKG question was C. Meadows in "Some Threshold Schemes Without Central Key Distributors", in CRYPTO 1988 (I think) or in "Congressus Numerantium, 46, 1985, pp. 187-199." but cannot find the paper online.
+\subsection{Distributed Key Generation (DKG)}
+\label{s:related-work:dkg}
+DKG protocols were introduced by Ingemarsson and Simmons~\cite{Ingemarsson1991} and subsequently improved by Pedersen ~\cite{Pedersen1991AThreshold,Pedersen1991NonInteractive}.
+Gennaro et al.~\cite{GJKR07} noticed that if players in Pedersen's DKG refuse to deal~\cite{Pedersen1991AThreshold}, they cannot be provably blamed and fixed this in their new \jfdkg protocol.
+They also showed that secrets produced by Pedersen's DKG can be \textit{biased}, and fixed this in their \newdkg protocol.
+% Note: Gennaro's unbiasable New-DKG with Pedersen commitments can be made more efificient (one less round, I think) by changing the reconstruction of $y=g^z_i$ to use proofs-of-knowledge~\cite{Canetti1999Adaptive}.
+% But, NBB16 is even better I think.
+Neji et al. gave a more efficient way of debiasing Pedersen's DKG~\cite{NBB16}.
+Gennaro et al. also introduced the first ``fast-track'' or optimistic DKG~\cite{GRR98p}.
+Canetti et al. modified \newdkg into an adaptively-secure DKG~\cite{CGJ+99}.
+Fouque and Stern~\cite{FS01} gave a one-round DKG that removes the need for an expensive \textit{complaint round} (see \cref{alg:dkg}).
+So far, all DKGs required a $\Theta(t)$-sized broadcast by each player.
+% Note: In the worst case, \ejfdkg requires $\Theta(f^2)$ pairings to verify $\Theta(f^2)$ complaints.
+% Even worse, JF-DKG would require $\Theta(f^2 \times t)$ time.
+
+% Notes:
+%  - Kate et al. DKG papers don't mention eJF-DKG. 
+%  - PolyCommit mentions that eVSS can be applied to DKG, but does not explore the NIZKs needed to prove g^{f_i(0)} is correct.
+%  - So attribution goes to Kate's thesis.
+Kate's \ejfdkg~\cite{Kate2010} reduced the dealer's broadcast to $\Theta(1)$ via constant-sized polynomial commitments~\cite{KZG10a}, taking a first step towards scalability.
+% Note: DKG verification of $n$ shares in JF-DKG is $nt$ exponentiations in the worst case.
+\ejfdkg also reduced verification time from $\Theta(nt)$ per player to $\Theta(n)$ but at the cost of $\Theta(nt)$ dealing time per player.
+To summarize, all DKGs so far require $\Theta(nt)$ computation per player (in the worst case), while our \ourdkg requires $\Theta(\amtDealTime)$.
+% Note: Technically it's O(nt + t\log^2{t}), if we include the t\log^2{t} interpolation cost.
+% But that's just O(nt + t^2) if done naively, which is just O(nt)
+
+So far, all these DKGs assume a synchronous communication model between players, which can be difficult to instantiate.
+Recently, ETHDKG~\cite{SJSW19} surpasses this difficulty using Ethereum~\cite{ethereum}.
+Kate et al. introduced \textit{asynchronous} DKG protocols~\cite{Kate2010,KG09} based on bivariate polynomials.
+We have not investigated if our techniques apply there.
+
+% Note: Gennaro's New-DKG with Pedersen commitments can be made unbiasable by changing the reconstruction of $y=g^z_i$ to use proofs-of-knowledge~\cite{CGJ+99}
+
+\subsection{Polylogarithmic DKG}
+\label{s:related-work:polylogdkg}
+Canny and Sorkin present a polylogarithmic time DKG~\cite{CS04}, a beautiful result that unfortunately has limitations.
+In certain settings, their protocol only requires $\Theta(\log^3{n})$ computation and communication per player.
+The key idea is that each player only talks to a \textit{group} of $\log{n}$ other players, leading to a $\Theta(\log^3{n})$ per-player complexity.
+Unfortunately, their protocol centralizes trust in a dealer who must ``permute'' the players before the protocol starts.
+The authors argue the dealer can be distributed amongst the players, but it is unclear how to do so securely while maintaining the $\Theta(\log^3{n})$ per player complexity.
+
+Furthermore, their protocol does not efficiently support all thresholds $(t,n)$.
+Instead, it only supports $((1/2 + \varepsilon)n, n)$ thresholds and tolerates $(1/2 - \varepsilon)n$ failures, where $\varepsilon \in (0,1/2)$.
+Thus, their protocol can tolerate more failures only if $\varepsilon$ is made very small.
+Unfortunately, a smaller $\varepsilon$ causes the group size to increase, driving up the per-player complexity (see \cref{s:polylog-dkg-confgs}).
+As a result, their protocol only scales in settings where a small fraction of failures is tolerated (e.g., 1/5) and a larger fraction of players is required to reconstruct (e.g., 4/5).
+Nonetheless, for their protocol to be truly distributed, the trusted dealer must be eliminated as a single point of failure.
+
+\subsection{DKG Implementations}
+\label{s:related-work:dkg-impl}
+Finally, the increasing popularity of BLS threshold signatures~\cite{Boldyreva03} has led to several DKG implementations.
+For example, recent works implement a DKG on top of the Ethereum blockchain~\cite{SJSW19,Schindler2018EthDkgGithub,orbs-dkg-github}.
+Cryptocurrency companies such as DFINITY and GNOSIS implement a DKG as well~\cite{dfinity-dkg,gnosis-dkg}.
+Finally, Distributed Privacy Guard (DKGPG)~\cite{dkgpg} implements a DKG for ElGamal threshold encryption~\cite{DF90} and for DSS threshold signatures~\cite{CGJ+99}.
+All current implementations are based on Feldman~\cite{Feldman87} or Pedersen commitments~\cite{Pedersen1991AThreshold} and require $\Theta(nt)$ time per player, which makes them difficult to scale.

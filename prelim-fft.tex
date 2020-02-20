@@ -1,0 +1,16 @@
+% moderncomputeralgebra-ch8 talks about FFT in finite field (roots of unity to coefficients)
+% moderncomputeralgebra-ch10 talks about evaluation and interpolation using FFT at arbitrary points: x_i, f(x_i)
+% moderncomputeralgebra-ch11 talks about fast Euclidean Algorithm (Theorem 11.10)
+We use FFT~\cite{vG13ModernCh8} to speed up many polynomial operations in $\Fp[X]$ where $p$ is a prime.
+For this to work, we assume a finite field $\Fp$ which supports \textit{roots of unity} and thus supports the discrete-version of the Fast Fourier Transform.
+(Cormen et al.~\cite{CLRS09} and von zur Gathen and Gerhard~\cite{vG13ModernCh8} give an excellent background on roots of unity and FFT.)
+Let $N=2^k$ for some $k>0$ and let $\omega_N$ denote a primitive $N$th root of unity in the finite field $\Fp$.
+Recall that an FFT of size $N$ on a degree-bound $N$ polynomial $\phi$ computes $(\phi(\omega_N^{i-1}))_{i\in[N]}$ in $\Theta(N\log{N})$ times.
+Also, recall that the set $\{\omega_N^0, \omega_N^1,\omega_N^2,\dots,\omega^{N-1}\}$ of all $N$ $N$th roots of unity forms a multiplicative subgroup of $\Fp$.
+
+FFT can be used to speed up polynomial multiplication and division.
+% Aho, Ullman "The Design and Analysis of Computer Algorithms" book says in Section 8.3 "Polynomial multiplication and divison", Theorem 8.7 that multiplication and division of any polynomial of degree n take the same time.
+% Preparata paper: Remark at the end states that convolutions of any size can be computed. In other words, polynomials of any degree can be multiplied.
+Specifically, for polynomials of degree-bound $n$, we divide and multiply them in $\Theta(n\log{n})$ field operations~\cite{PS77,AH74}.
+%To perform FFT on a max-degree $q = 2^k - 1$ polynomial, we need a $2^k$th primitive root of unity in the finite field where the polynomial coefficients are from.
+We compute \bezout coefficients $\gamma,\zeta$ for two polynomials $\alpha,\beta$ of degree-bound $n$ such that $\gamma(x)\alpha(x)+\zeta(x)\beta(x)=\gcd(\alpha,\beta)$ using the Extended Euclidean Algorithm (EEA) in $\Theta(n\log^2{n})$ field operations~\cite{vG13ModernCh11}.

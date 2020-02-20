@@ -1,0 +1,82 @@
+We show our modified KZG scheme with AMT proofs satisfies \textit{computational hiding} (see \cref{def:polycommit:comp-hiding}) under the discrete log (DL) assumption and \textit{evaluation binding} (see \cref{def:polycommit:eval-binding}) under the $\ell$-Strong Bilinear Diffie-Hellman ($\ell$-SBDH) assumption.
+These properties were originally defined in \cite{KZG10a}.
+We prove these properties hold for a more general scheme that builds AMTs for an arbitrary set $X$ of $n$ points (rather than just for the set of roots of unity).
+For this scheme, \polysetup returns not only $\ell$-SDH public parameters, but also the accumulator commitments necessary to verify AMT proofs.
+In other words, given an evaluation point $x^{*} \in X$, verifiers have access to accumulators $\{g^{a_w(\tau)}\}_{w\in\treepath(x^{*})}$ necessary to verify $x^{*}$'s AMT proof.
+(Recall that accumulators of degree $>\deg(\phi)$ can be discarded; see \cref{s:amt:public-parameters}.)
+
+\paragraph{Computational Hiding Proof.}
+Suppose there exists an adversary $\Adv=(\Adv_0,\Adv_1)$ that breaks computational hiding for polynomials of degree $d$ (see \cref{def:polycommit:comp-hiding}) and outputs $\phi(\hat{x})$ for an unqueried $\hat{x}\ne x_i, \forall i\in[d]$ where $d=\deg{\phi}$.
+Then, we show how to build an adversary \AdvB that takes as input a random discrete log instance $(g, g^a)$ and uses \Adv to break it and output $a$.
+(Our proof is in the same style as Kate et al.'s proof for $\mathsf{PolyCommit}_\mathsf{DL}$'s computational hiding~\cite{KZG10b}.)
+
+\AdvB runs $\polysetup(1^\lambda, d)$ which picks $\tau\in_R \Fp$ and outputs public parameters $\pp=\PPsdh_d(g;\tau)$.
+Importantly, since \AdvB runs the setup, \AdvB will know the trapdoor $\tau$.
+\AdvB calls $\Adv_0$, which picks $d$ distinct points $x_i\in X, \forall i\in[d]$.
+Then, \AdvB picks $d$ random evaluations $y_i\in \Fp$, one for each $x_i$.
+\AdvB also picks a random $x_0\in X$ different than all $x_i$'s.
+For notational convenience, let $y_0 = a$.
+(Although \AdvB does not know $a$, it will be sufficient for him to know $g^{y_0}=g^a$.)
+Note that $(x_i, y_i)_{i=0}^d$ determines a degree $d$ polynomial $\phi$ where $\phi(x_i) = y_i,\forall i\in[0,d]$.
+Since $\AdvB$ does not know $a$ (only $g^a$), it will interpolate $\phi$'s commitment $g^{\phi(\tau)}$ ``in the exponent'' as:
+$$g^{\phi(\tau)} = \prod_{i\in [0,d]} (g^{y_i})^{\Ell_i^{T}(\tau)}.$$
+Here, $T=\{x_i\}_{i\in [0,d]}$ and recall that $\Ell_i^T(\tau)=\prod_{j\in T, j\ne i} (\tau-x_j)/(x_i-x_j)$ (see \cref{s:prelim:interpolation}).
+To summarize, \AdvB ``embeds'' the $(g,g^a)$ challenge in an (unknown-to-$\AdvB$-but-determined) polynomial $\phi$ with commitment $c=g^{\phi(\tau)}$.
+
+Next, \AdvB has to simulate AMT proofs $\pi_i$ for $y_i = \phi(x_i), \forall i\in[d]$.
+To do this, recall that at each node $w$ in the AMT, we have quotient and remainder polynomials $q_w,r_w$ such that $r_{\parent(w)} = q_w a_w + r_w$ (see \cref{f:multipoint-eval}).
+Also, recall that \AdvB knows $\tau$ so he can compute accumulator evaluations $a_w(\tau), \forall$ nodes $w$ in the AMT.
+Now, \AdvB can simulate proofs as follows.
+
+For the root node $w = \varepsilon$, we have $r_{\parent(\varepsilon)} = \phi$, so \AdvB picks a random $r_\varepsilon(\tau)\in \Fp$, and computes the root quotient commitment as $g^{q_\varepsilon(\tau)}=(g^{\phi(\tau)}/g^{r_\varepsilon(\tau)})^{\frac{1}{a_\varepsilon(\tau)}}$.
+At the next level, consider the children nodes $u$ and $v$ of the root $\varepsilon$.
+For each child $w\in\{u,v\}$, \AdvB must commit to a quotient $q_w$ that satisfies $r_\varepsilon(\tau)=q_w(\tau) a_w(\tau) + r_w(\tau)$ for some $r_w$.
+So \AdvB proceeds similarly: for each child $w\in\{u,v\}$, he picks a random $r_w(\tau)$ and computes a commitment $g^{q_w(\tau)}=(g^{r_\varepsilon(\tau)}/g^{r_w(\tau)})^{\frac{1}{a_w(\tau)}}$.
+\AdvB will do this recursively until it reaches leaf nodes in the AMT.
+For each leaf $l$, instead of picking $r_l(\tau)$ randomly, \AdvB will set it to the $y_i$ corresponding to that leaf.
+This way, \AdvB can simulate quotient commitments $\{g^{q_w(\tau)}\}_{w\in \treepath(x_i)}$ for all $i\in[d]$ that pass the AMT proof verification in \cref{eq:amt-verify}.
+
+Next, \AdvB calls \Adv with $(\pp, c, (x_i, y_i, \pi_i)_{i=1}^d)$ as input, hoping that \Adv outputs another point $\hat{x}$ and its evaluation $\phi(\hat{x})$.
+% It could be that \hat{x} = x_0, but in that case A trivially breaks the DL instance, so we're good.
+Since \Adv breaks computational hiding, this happens with non-negligible probability.
+(Note that \AdvB can check \Adv succeeds by interpolating $g^{\phi(\hat{x})}$ ``in the exponent''.)
+When \Adv succeeds, if $\hat{x}=x_0$, then $a = \phi(\hat{x})$, so \AdvB breaks discrete log on $(g,g^a)$.
+Otherwise, \AdvB uses the first $d$ points $(x_i, y_i=\phi(x_i))_{i\in [d]}$ and this new distinct $(\hat{x},\phi(\hat{x}))$ point to interpolate $\phi$ and as a result obtain $a = \phi(x_0)$.
+(Recall that, by \cref{def:polycommit:comp-hiding}, we have $\hat{x}\ne x_i,\forall i\in[d]$.)
+As a result, \AdvB breaks discrete log on $(g,g^a)$.
+
+\paragraph{Evaluation Binding Proof.}
+Suppose there exists an adversary \Adv that outputs a commitment $c$, with two contradicting proofs $\pi, \pi'$ attesting that $\phi(k)$ is equal to $v$ and $v'$, respectively.
+We show how to build another adversary \AdvB that breaks $q$-SBDH.
+First, \AdvB runs \Adv to get $(c, \pi, \pi', \phi(k), v, v')$.
+Let $W=\treepath(k)$ denote the nodes along $k$'s path in the AMT.
+Let $(\pi_i)_{i\in W}$ denote the quotient commitments in $\pi$.
+Similarly, let $(\pi'_i)_{i\in W}$ denote the quotient commitments in $\pi'$.
+Since both proofs verify, we have:
+\begin{align*}
+e(c, g) &= e(g^{v}, g) \prod_{i\in W} {e(\pi_i, g^{a_i(\tau)})}\\
+e(c, g) &= e(g^{v'}, g) \prod_{i \in W} {e(\pi'_i, g^{a_i(\tau)})}.
+\end{align*}
+Dividing the first equation by the second, we get:
+\begin{align*}
+% because the two equations above have the same LHS
+%e(g^{v}, g) \prod_{i \in W} {e(\pi_i, g^{a_i(\tau)})} &= e(g^{v'}, g) \prod_{i \in W} {e(\pi'_i, g^{a_i(\tau)})}\Leftrightarrow\\
+1_{\Group_T} &= \frac{e(g^{v}, g)}{e(g^{v'}, g)} \frac{\prod_{i \in W} {e(\pi_i, g^{a_i(\tau)})}} {\prod_{i \in W} {e(\pi'_i, g^{a_i(\tau)})}}\Leftrightarrow\\
+1_{\Group_T} &= {e(g^{v-v'}, g)} \prod_{i \in W} \frac{e(\pi_i, g^{a_i(\tau)})}{e(\pi'_i, g^{a_i(\tau)})} \Leftrightarrow\\
+% divide by e(g^v', g) and by \prod_i e(\pi_i, g^{a_i(\tau)}) + bilinear properties
+e(g^{v'-v}, g) &= \prod_{i \in W} e(\pi_i / \pi'_i, g^{a_i(\tau)}).
+\end{align*}
+Now, recall that one of the accumulators $(a_i(x))_{i\in W}$ is the monomial $(x - k)$, and all the other $a_i(x)$'s contain $(x-k)$ as a term, which means it can be factored out of them.
+Thus, since $(x-k)$ perfectly divides all $a_i(x)$'s, let $r_i(x) = a_i(x) / (x-k), \forall i\in W$.
+Importantly, the adversary \AdvB can compute all $r_i(x)$'s in polynomial time, since it can reconstruct all the accumulator polynomials $(a_i(x))_{i\in W}$.
+As a result, \AdvB can compute all commitments $(g^{r_i(\tau)})_{i \in W}$.
+Then, \AdvB breaks $\ell$-SBDH as follows:
+\begin{align*}
+e(g^{v'-v}, g) &= \prod_{i\in W} {e(\pi_i / \pi'_i, g^{r_i(\tau)(\tau-k)})}\\
+% because bilinear properties
+e(g^{v'-v}, g) &= \prod_{i\in W} {e(\pi_i / \pi'_i, g^{r_i(\tau)})^{(\tau-k)}}\\
+% because a1^x a2^x a3^x ... an^x = (a1 a2 ... an)^x
+e(g^{v'-v}, g) &= \left[\prod_{i\in W} {e(\pi_i / \pi'_i, g^{r_i(\tau)})}\right]^{(\tau-k)}\\
+% exponentiate by 1/(\tau-k) and by 1/(v-v')
+e(g, g)^{\frac{1}{\tau-k}} &= \left[\prod_{i\in W} {e(\pi_i / \pi'_i, g^{r_i(\tau)})}\right]^{\frac{1}{v'-v}}.
+\end{align*}

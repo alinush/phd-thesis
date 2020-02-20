@@ -1,0 +1,298 @@
+% -*- Mode:TeX -*-
+
+%% IMPORTANT: The official thesis specifications are available at:
+%%            http://libraries.mit.edu/archives/thesis-specs/
+%%
+%%            Please verify your thesis' formatting and copyright
+%%            assignment before submission.  If you notice any
+%%            discrepancies between these templates and the 
+%%            MIT Libraries' specs, please let us know
+%%            by e-mailing thesis@mit.edu
+
+%% The documentclass options along with the pagestyle can be used to generate
+%% a technical report, a draft copy, or a regular thesis.  You may need to
+%% re-specify the pagestyle after you \include  cover.tex.  For more
+%% information, see the first few lines of mitthesis.cls. 
+
+%\documentclass[12pt,vi,twoside]{mitthesis}
+%%
+%%  If you want your thesis copyright to you instead of MIT, use the
+%%  ``vi'' option, as above.
+%%
+%\documentclass[12pt,twoside,leftblank]{mitthesis}
+%%
+%% If you want blank pages before new chapters to be labelled ``This
+%% Page Intentionally Left Blank'', use the ``leftblank'' option, as
+%% above.
+
+%\documentclass[12pt,twoside,doublespace]{mitthesis}
+\documentclass[12pt,twoside,singlespace]{mitthesis}
+
+\input{includes}
+\input{title}
+
+\input{defs}
+\input{defs-aad}
+\input{defs-thresh}
+\input{defs-vcs}
+
+% Performance numbers for BLS/VSS/DKG
+\input{perf}
+
+%% This bit allows you to either specify only the files which you wish to
+%% process, or `all' to process all files which you \include.
+%% Krishna Sethuraman (1990).
+%%
+%% ...but I removed them because I didn't find them useful. Alin Tomescu (2015).
+
+%\typein [\files]{Enter file names to process, (chap1,chap2 ...), or `all' to
+%process all files:}
+%\def\all{all}
+%\ifx\files\all \typeout{Including all files.} \else \typeout{Including only \files.} \includeonly{\files} \fi
+
+\begin{document}
+
+\include{cover}
+
+% Some departments (e.g. 5) require an additional signature page.  See
+% signature.tex for more information and uncomment the following line if
+% applicable.
+% \include{signature}
+\pagestyle{plain}
+
+%
+% Table of contents
+%
+\include{contents}
+
+% List of figures and tables (which no one reads, I presume)
+\ifCameraReady
+\cleardoublepage
+\listoffigures
+\cleardoublepage
+\listoftables
+\fi
+
+%%%%%%%%%%%%%%%%%%%
+% Thesis chapters %
+%%%%%%%%%%%%%%%%%%%
+
+%
+% Part 0: Intro
+%
+
+    \chapter{Introduction}
+    \input{intro}
+
+    \chapter{Preliminaries}
+    \label{s:prelim}
+    
+        % Notation, Cryptographic Assumptions
+        \input{prelim}
+        
+        \section{Roots of Unity and Fast Fourier Transforms (FFTs)}
+        \label{s:prelim:fft}
+        \input{prelim-fft}
+        
+        \section{Efficiently Evaluating Polynomials at Many Points}
+        \label{s:prelim:multipoint-eval}
+        \input{prelim-multipoint-eval}
+        
+        \section{Lagrange Polynomial Interpolation}
+        \label{s:prelim:interpolation}
+        \input{prelim-lagrange-interpol}
+        
+        \section{(Constant-sized) Polynomial Commitments}
+        \label{s:prelim:polycommit}
+        \input{prelim-polycommit}
+        
+        \section{Trusted Setup for $q$-type Assumptions}
+        \label{s:prelim:trusted-setup}
+        \input{prelim-trusted-setup}
+
+%
+% Part I: AAS and AAD
+%
+\cleardoublepage
+\part{Append-only Authenticated Data Structures}
+\label{s:aads}
+    
+    \chapter{Introduction}
+    \label{s:aads:intro}
+    \input{aads-intro}
+    
+        \section{Related Work}
+        \label{s:aads:related-work}
+        \input{aads-related-work}
+
+    \chapter{Preliminaries}
+    \label{s:prelim:aads}
+        \input{prelim-aads}
+        
+        \section{Proofs (of Knowledge) of Exponentiation in Hidden-Order Groups}
+        \label{s:prelim:poke-hidden-order}
+        \input{prelim-poke-hidden-order}
+        
+        \section{Cryptographic Accumulators}
+        \label{s:prelim:acc}
+        \input{prelim-acc}
+        
+            \subsection{Bilinear Accumulators}
+            \label{s:prelim:bilinear-acc}
+            \input{prelim-bilinear-acc}
+    
+            \subsection{RSA Accumulators}
+            \label{s:prelim:rsa-acc}
+            \input{prelim-rsa-acc}
+            
+        \section{(Un)trusted Setup for Hidden-Order Groups}
+        \label{s:prelim:trusted-setup-rsa}
+        \input{prelim-trusted-setup-rsa}
+    
+    \chapter{Append-only Authenticated Sets (AAS)}
+    \label{s:aas}
+    
+        \section{Overview}
+        \label{s:aas:intro}
+        \input{aas-intro}
+        
+        \section{Definitions}
+        \label{s:aas:defs}
+        \input{aas-definition}
+        
+        \section{AAS from Bilinear Accumulators}
+        \label{s:aas:from-bilinear-acc}
+        \input{aas-bilinear}
+        
+            \subsection{Algorithms}
+            \label{s:aas:from-bilinear-acc:algorithms}
+            \input{aas-bilinear-algo}
+            
+            \subsection{Security Proofs}
+            \label{s:aas:from-bilinear-acc:proofs}
+            \input{aas-bilinear-proofs}
+        
+        
+        \section{AAS from RSA Accumulators}
+        \label{s:aas:from-rsa-acc}
+        \input{aas-rsa}
+    
+    \chapter{Append-only Authenticated Dictionaries (AAD)}
+    \label{s:aad}
+    
+        \section{Overview}
+        \label{s:aad:intro}
+        \input{aad-intro}
+        
+        \section{Definitions}
+        \label{s:aad:defs}
+        \input{aad-definition}
+       
+        \section{AAD from (Any) Accumulator}
+        \label{s:aad:from-acc}
+        \input{aad-from-acc}
+        
+        \section{Bilinear-based AAD Implementation}
+        \label{s:aad:from-bilinear-acc:eval}
+        \input{aad-bilinear-eval}
+%
+% Part II: AMT [VSS/DKG]
+%
+\part{Threshold Cryptosystems}
+\label{s:threshcrypto}
+
+    
+    \chapter{Introduction}
+    \label{s:threshcrypto:intro}
+    \input{threshcrypto-intro}
+        
+        \section{Related Work}
+        \label{s:threshcrypto:related-work}
+        \input{threshcrypto-related-work}
+
+    \chapter{Preliminaries}
+    \label{s:prelim:threshcrypto}
+    
+        \section{Communication and Adversarial Model}
+        \input{prelim-thresh-model}
+        
+        \section{$\ell$-Polynomial Diffie-Hellman (polyDH) Assumption}
+        \label{s:prelim:assumptions-threshold-crypto}
+        \input{prelim-polydh}
+
+        \section{Threshold Signature Schemes (TSS)}
+        \label{s:prelim:threshsig}
+        \input{prelim-threshsig}
+        
+        \section{(Verifiable) Secret Sharing (VSS)}
+        \label{s:prelim:vss}
+        \label{s:prelim:shamir-secret-sharing}
+        \input{prelim-vss}
+        
+        \section{Distributed Key Generation (DKG)}
+        \label{s:prelim:dkg}
+        \input{prelim-dkg}
+        
+        \section{Vector Commitments (VCs)}
+        \label{s:prelim:vcs}
+        \input{prelim-vcs}
+
+    \chapter{Constant-sized, Univariate Polynomial Commitments with Faster Proofs}
+    \label{s:amt}
+        
+        %\section is defined in amt.tex
+        \input{amt}
+        
+            \subsection{Security Proofs}
+            \label{s:amt:proofs}
+            \input{amt-proofs}
+    
+        
+        \section{Vector Commitments (VCs) from AMTs}
+        \label{s:vcs:from-amt}
+        \input{vc-from-amt}
+
+    \chapter{Scalable Threshold Cryptosystems}
+    \label{s:threshcrypto:scalable-systems}
+    
+        \section{Scalable Threshold Signatures (TSS)}
+        \label{s:threshsig}
+        \input{scalable-threshsig}
+        
+        \section{Scalable Verifiable Secret Sharing (VSS)}
+        \label{s:scalable-vss}
+        \input{scalable-vss}
+        
+        \section{Scalable Distributed Key Generation (DKG)}
+        \label{s:scalable-dkg}
+        \input{scalable-dkg}
+        
+        \section{Implementation}
+        \label{s:threshcrypto:eval}
+        \input{threshcrypto-eval}
+
+%
+% Part IV: Bye bye
+%
+\part{Conclusion and Future Work}
+
+    \chapter{Future Work}
+    \input{future-work-aads}
+    \input{future-work-threshcrypto}
+    
+    \chapter{Conclusion}
+    \label{s:conclusion}
+    \input{conclusion}
+
+\cleardoublepage
+\part{Appendix}
+\appendix
+% NOTE: Need \chapter title in the appendix!
+\chapter{Appendix}
+\include{appa}
+\include{appb}
+
+\include{biblio}
+
+\end{document}
+

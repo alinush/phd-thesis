@@ -1,0 +1,154 @@
+\newif\ifCameraReady
+\CameraReadytrue % camera-ready
+\newif\ifHideAcks
+%\HideAckstrue % hides acks and quote
+
+%
+% Some colors:
+%  Blue: #268bd2
+%  (Grey) Blue: #657b83
+%  Green: #859900
+%  (Dark) Orange: #cb4b16
+%  Red: #dc322f
+%  Periwinkle: #6c71c4
+%  Pink: #d33682
+%  Teal: #2aa198
+%  Yellow: #b58900
+%
+\definecolor{myBlueColor}{HTML}{268BD2}
+\definecolor{myYellowColor}{HTML}{B58900}
+\definecolor{myGreenColor}{HTML}{859900}
+\definecolor{myRedColor}{HTML}{DC322F}
+\newcommand{\myblue}[1]{\textcolor{myBlueColor}{#1}}
+\newcommand{\myred}[1]{\textcolor{myRedColor}{#1}}
+\newcommand{\red}[1]{\textcolor{red}{#1}}
+\newcommand{\myyellow}[1]{\textcolor{myYellowColor}{#1}}
+\newcommand{\mygreen}[1]{\textcolor{myGreenColor}{#1}}
+
+\newcommand{\alice}{Alice\xspace}
+\newcommand{\bob}{Bob\xspace}
+
+%
+% Markup defs
+%
+%\newcommand{\xmark}{\ding{55}}
+\newcommand{\api}{\hangindent=\parindent \hangafter=1 \noindent}
+\newcommand{\comment}[1]{}
+
+%
+% Some mathy things
+%
+
+\DeclareMathOperator{\dom}{Dom}    % domain of a function
+\DeclareMathOperator{\Ima}{Im}	% image of a function
+\DeclareMathOperator*{\argmin}{argmin}
+\DeclarePairedDelimiter{\ceil}{\lceil}{\rceil}
+\DeclarePairedDelimiter{\floor}{\lfloor}{\rfloor}
+
+\newcommand{\vect}[1]{\mathbf{#1}}
+\newcommand{\mat}[1]{\bm{#1}}
+
+\newcommand{\Group}{\mathbb{G}}
+\newcommand{\GroupHidOrd}{\ensuremath{\Group_{\textbf{?}}}}
+\newcommand{\Fp}{\mathbb{F}_p}
+\newcommand{\GT}{\mathbb{G}_T}
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\Zp}{\mathbb{Z}_p}
+\newcommand{\ZN}{\mathbb{Z}_N}
+\newcommand{\ZNstar}{\mathbb{Z}_N^*}
+\newcommand{\QRN}{\mathbb{QR}_N}
+% prime (known) order (PO) group setup algorithm
+\newcommand{\groupkosetup}{\ensuremath{\mathcal{G}_{\mathsf{prime}}}}
+% hidden-order (HO) group setup algorithm
+\newcommand{\grouphosetup}{\ensuremath{\mathcal{G}_{\mathsf{hidden}}}}
+
+\newcommand{\primes}{\ensuremath{\mathsf{Primes}}}
+\newcommand{\poly}{\mathsf{poly}}
+\newcommand{\negl}{\mathsf{negl}}
+\newcommand{\nonnegl}{\eta}
+\newcommand{\Hb}{\mathcal{H}}                       % hash function to binary string
+\newcommand{\Hp}{\mathcal{H}_{\mathbb{F}}}          % hash function to finite field
+\newcommand{\Hprime}{\mathcal{H}_{\mathsf{prime}}}   % hash to primes
+
+\newcommand{\bezout}{B\'ezout\xspace}
+\newcommand{\Ell}{\mathcal{L}}
+\newcommand{\Adv}{\ensuremath{\mathcal{A}}\xspace} % adversary
+\newcommand{\AdvB}{\ensuremath{\mathcal{B}}\xspace} % adversary
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[section]
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{corollary}{Corollary}[theorem]
+\newtheorem{lemma}[theorem]{Lemma}
+
+%
+% Accumulators (RSA) notation
+%
+
+%
+% Po(K)E protocols
+%
+\newcommand{\poe}{PoE\xspace}
+\newcommand{\pokestar}{PoKE$^*$\xspace}
+\newcommand{\poke}{PoKE\xspace}
+\newcommand{\poketwo}{PoKE2\xspace}
+
+%
+% Polynomial commitment APIs
+%
+\newcommand{\vk}{\ensuremath{\mathsf{VK}}\xspace}
+\newcommand{\PPsdh}{\ensuremath{\mathsf{PP}^\mathsf{SDH}}\xspace}
+\newcommand{\PPpke}{\ensuremath{\mathsf{PP}^\mathsf{PKE}}\xspace}
+\newcommand{\pp}{\ensuremath{\mathsf{pp}}\xspace}
+\newcommand{\nizkpok}{\ensuremath{\pi^\mathsf{DLog}}\xspace}
+\newcommand{\kzgbatchproof}{\ensuremath{\pi^\mathsf{batch}}\xspace}
+\newcommand{\polysetup}{\ensuremath{\mathsf{Poly.Setup}}\xspace}
+\newcommand{\polycommit}{\ensuremath{\mathsf{Poly.Commit}}}
+\newcommand{\polyopen}{\ensuremath{\mathsf{Poly.Open}}}
+\newcommand{\polyverifypoly}{\ensuremath{\mathsf{Poly.VerifyPoly}}}
+\newcommand{\polycreatecommwitness}{\ensuremath{\mathsf{Poly.CreateCommWitness}}}
+\newcommand{\polycreatewitness}{\ensuremath{\mathsf{Poly.ProveEval}}\xspace}
+\newcommand{\polyverifyeval}{\ensuremath{\mathsf{Poly.VerifyEval{\xspace}}}}
+\newcommand{\polyverifycommittedeval}{\ensuremath{\mathsf{Poly.VerifyCommEval}}}
+\newcommand{\polycombinecomms}{\ensuremath{\mathsf{Poly.CombineComms}}}
+
+\newcommand{\decominfo}{\ensuremath{\delta}\xspace}
+
+%
+% Commands for describing algorithms
+%
+\newcommand*\Let[2]{\State #1 $\gets$ #2}
+\newcommand{\emptyline}{\State}
+\newcommand{\AssertStateless}{\textbf{assert}\xspace}
+\newcommand{\Assert}{\State \AssertStateless}
+\algnewcommand{\LineComment}[1]{\State \(\triangleright\) #1}
+
+%
+% Notations for trees and forests
+%
+\newcommand{\prefixes}{\ensuremath{\mathsf{P}}}
+\newcommand{\parent}{\ensuremath{\mathsf{parent}}}
+\newcommand{\leaves}{\ensuremath{\mathsf{leaves}}}
+\newcommand{\internal}{\ensuremath{\mathsf{internal}}}
+\newcommand{\rootnode}{\ensuremath{\mathsf{root}}}
+\newcommand{\bin}{\ensuremath{\mathsf{bin}}}
+\newcommand{\roots}{\ensuremath{\mathsf{roots}}}
+\newcommand{\sibling}{\ensuremath{\mathsf{sibling}}}
+\newcommand{\treepath}{\ensuremath{\mathsf{path}}}
+\newcommand{\isancestor}{\ensuremath{\mathsf{isAncestor}}}
+\newcommand{\isrightchild}{\ensuremath{\mathsf{isRightChild}}}
+
+%
+% Markups for to do's and notes
+%
+\mathchardef\mhyphen="2D % Hyphens in math mode: https://www.logic.at/staff/salzer/etc/mhyphen/
+\newcommand{\authnote}[2]{{\textcolor{red}{{#1: }\textcolor{blue}{ #2}}}}
+
+
+\ifCameraReady
+    \newcommand{\anote}[1]{}
+    \newcommand{\snote}[1]{}
+\else
+    \newcommand{\anote}[1]{{\authnote{Alin}{#1}}}
+    \newcommand{\snote}[1]{{\authnote{Srini}{#1}}}
+\fi

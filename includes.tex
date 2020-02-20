@@ -1,0 +1,48 @@
+\usepackage{algorithm}                  % for describing algorithms nicely
+\usepackage[noend]{algpseudocode}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}                     % \newtheorem (conflicts with llncs template due to \proof)
+\usepackage[english]{babel}
+\usepackage{booktabs}                   % for table spacing, \midrule
+%% These have been added at the request of the MIT Libraries, because
+%% some PDF conversions mess up the ligatures.  -LB, 1/22/2014
+\usepackage{calculator}
+\usepackage{cfr-lm} % \textsi for small-caps italics
+\usepackage{cite}
+\usepackage{cmap}
+\usepackage{epigraph}
+\usepackage{enumitem}
+\usepackage[T1]{fontenc}
+\usepackage{forest}
+\usepackage{graphicx}
+\usepackage[hidelinks]{hyperref}        % Use [draft] to fix "\pdfendlink ended up in different 
+\usepackage{hyphenat}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{lgrind}
+\usepackage[babel=true]{microtype}
+\usepackage{lmodern}
+\usepackage{makecell}                   % use \makecell{text\\ new line} to break up lines inside table cells
+\usepackage{mathtools}                  % for \DeclarePairedDelimiter{\ceil}{\lceil}{\rceil}
+\usepackage{multirow}
+\usepackage{pdflscape}                  % for rotating PDF pages
+%\usepackage{refcheck}                  % prints "unused bibitem" in the build log for unused citations. WARNING: Also annotates PDF to indicate what's been unreferenced.
+\usepackage{rotating}
+\usepackage{tocloft}
+\usepackage{xcolor}
+\usepackage{xspace}
+\usepackage{xstring}                    % for \IfStrEqCase
+
+\pagestyle{plain}
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{3}
+
+% global spacing for itemize lists
+\setitemize{noitemsep,topsep=5pt,parsep=3pt,partopsep=1pt}
+
+%
+% WARNING: Keep here due to LaTeX bugs
+%
+\usepackage[noabbrev,capitalize]{cleveref}            % WARN: Must come after hyperref
+\usepackage[caption=false, font=footnotesize]{subfig} % WARN: When moved up in the sorted list, getting "TeX capacity exceeded, sorry [input stack size=5000]" error

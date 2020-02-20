@@ -1,0 +1,104 @@
+
+\begin{table}[t]
+    %\large
+    %\small
+    \footnotesize
+    \scriptsize
+    \centering
+    \begin{tabular}{cccclrlrlr}
+        {\makecell{Total \# of\\players}}
+        & \makecell{Dealing\\round\\time}
+        & \makecell{Verification\\round\\time}
+        & \multicolumn{2}{c}{\makecell{Reconstruction\\phase time\\(BC / WC)}}
+        & \multicolumn{2}{c}{\makecell{End-to-end\\time\\(BC / WC)}}
+        & \multicolumn{2}{c}{\makecell{End-to-end\\speed-up\\(BC / WC)}}\\
+        \toprule
+
+        \multirow{2}{*}{$n=3$} & \evssVssDealTime{3} & \evssVssVerifyTime{3} & \evssVssReconstrBcTime{3} & \evssVssReconstrWcTime{3} & \evssVssEndToEndBcTime{3} & \evssVssEndToEndWcTime{3} & \amtVssEndToEndBcTimeImprovOverevss{3} & \amtVssEndToEndWcTimeImprovOverevss{3} \\
+         & \amtVssDealTime{3} & \amtVssVerifyTime{3} & \amtVssReconstrBcTime{3} & \amtVssReconstrWcTime{3} & \amtVssEndToEndBcTime{3} & \amtVssEndToEndWcTime{3} & & \\
+        \addlinespace[0.4em]
+
+        \multirow{2}{*}{$n=7$} & \evssVssDealTime{7} & \evssVssVerifyTime{7} & \evssVssReconstrBcTime{7} & \evssVssReconstrWcTime{7} & \evssVssEndToEndBcTime{7} & \evssVssEndToEndWcTime{7} & \amtVssEndToEndBcTimeImprovOverevss{7} & \amtVssEndToEndWcTimeImprovOverevss{7} \\
+         & \amtVssDealTime{7} & \amtVssVerifyTime{7} & \amtVssReconstrBcTime{7} & \amtVssReconstrWcTime{7} & \amtVssEndToEndBcTime{7} & \amtVssEndToEndWcTime{7} & & \\
+        \addlinespace[0.4em]
+
+        \multirow{2}{*}{$n=15$} & \evssVssDealTime{15} & \evssVssVerifyTime{15} & \evssVssReconstrBcTime{15} & \evssVssReconstrWcTime{15} & \evssVssEndToEndBcTime{15} & \evssVssEndToEndWcTime{15} & \amtVssEndToEndBcTimeImprovOverevss{15} & \amtVssEndToEndWcTimeImprovOverevss{15} \\
+         & \amtVssDealTime{15} & \amtVssVerifyTime{15} & \amtVssReconstrBcTime{15} & \amtVssReconstrWcTime{15} & \amtVssEndToEndBcTime{15} & \amtVssEndToEndWcTime{15} & & \\
+        \addlinespace[0.4em]
+
+        \multirow{2}{*}{$n=31$} & \evssVssDealTime{31} & \evssVssVerifyTime{31} & \evssVssReconstrBcTime{31} & \evssVssReconstrWcTime{31} & \evssVssEndToEndBcTime{31} & \evssVssEndToEndWcTime{31} & \amtVssEndToEndBcTimeImprovOverevss{31} & \amtVssEndToEndWcTimeImprovOverevss{31} \\
+         & \amtVssDealTime{31} & \amtVssVerifyTime{31} & \amtVssReconstrBcTime{31} & \amtVssReconstrWcTime{31} & \amtVssEndToEndBcTime{31} & \amtVssEndToEndWcTime{31} & & \\
+        \addlinespace[0.4em]
+
+        \multirow{2}{*}{$n=63$} & \evssVssDealTime{63} & \evssVssVerifyTime{63} & \evssVssReconstrBcTime{63} & \evssVssReconstrWcTime{63} & \evssVssEndToEndBcTime{63} & \evssVssEndToEndWcTime{63} & \amtVssEndToEndBcTimeImprovOverevss{63} & \amtVssEndToEndWcTimeImprovOverevss{63} \\
+         & \amtVssDealTime{63} & \amtVssVerifyTime{63} & \amtVssReconstrBcTime{63} & \amtVssReconstrWcTime{63} & \amtVssEndToEndBcTime{63} & \amtVssEndToEndWcTime{63} & & \\
+        \addlinespace[0.4em]
+
+        \multirow{2}{*}{$n=127$} & \evssVssDealTime{127} & \evssVssVerifyTime{127} & \evssVssReconstrBcTime{127} & \evssVssReconstrWcTime{127} & \evssVssEndToEndBcTime{127} & \evssVssEndToEndWcTime{127} & \amtVssEndToEndBcTimeImprovOverevss{127} & \amtVssEndToEndWcTimeImprovOverevss{127} \\
+         & \amtVssDealTime{127} & \amtVssVerifyTime{127} & \amtVssReconstrBcTime{127} & \amtVssReconstrWcTime{127} & \amtVssEndToEndBcTime{127} & \amtVssEndToEndWcTime{127} & & \\
+        \addlinespace[0.4em]
+
+        \multirow{2}{*}{$n=255$} & \evssVssDealTime{255} & \evssVssVerifyTime{255} & \evssVssReconstrBcTime{255} & \evssVssReconstrWcTime{255} & \evssVssEndToEndBcTime{255} & \evssVssEndToEndWcTime{255} & \amtVssEndToEndBcTimeImprovOverevss{255} & \amtVssEndToEndWcTimeImprovOverevss{255} \\
+         & \amtVssDealTime{255} & \amtVssVerifyTime{255} & \amtVssReconstrBcTime{255} & \amtVssReconstrWcTime{255} & \amtVssEndToEndBcTime{255} & \amtVssEndToEndWcTime{255} & & \\
+        \addlinespace[0.4em]
+
+        \multirow{2}{*}{$n=511$} & \evssVssDealTime{511} & \evssVssVerifyTime{511} & \evssVssReconstrBcTime{511} & \evssVssReconstrWcTime{511} & \evssVssEndToEndBcTime{511} & \evssVssEndToEndWcTime{511} & \amtVssEndToEndBcTimeImprovOverevss{511} & \amtVssEndToEndWcTimeImprovOverevss{511} \\
+         & \amtVssDealTime{511} & \amtVssVerifyTime{511} & \amtVssReconstrBcTime{511} & \amtVssReconstrWcTime{511} & \amtVssEndToEndBcTime{511} & \amtVssEndToEndWcTime{511} & & \\
+        \addlinespace[0.4em]
+
+        \multirow{2}{*}{$n=1023$} & \evssVssDealTime{1023} & \evssVssVerifyTime{1023} & \evssVssReconstrBcTime{1023} & \evssVssReconstrWcTime{1023} & \evssVssEndToEndBcTime{1023} & \evssVssEndToEndWcTime{1023} & \amtVssEndToEndBcTimeImprovOverevss{1023} & \amtVssEndToEndWcTimeImprovOverevss{1023} \\
+         & \amtVssDealTime{1023} & \amtVssVerifyTime{1023} & \amtVssReconstrBcTime{1023} & \amtVssReconstrWcTime{1023} & \amtVssEndToEndBcTime{1023} & \amtVssEndToEndWcTime{1023} & & \\
+        \addlinespace[0.4em]
+
+        \multirow{2}{*}{$n=2047$} & \evssVssDealTime{2047} & \evssVssVerifyTime{2047} & \evssVssReconstrBcTime{2047} & \evssVssReconstrWcTime{2047} & \evssVssEndToEndBcTime{2047} & \evssVssEndToEndWcTime{2047} & \amtVssEndToEndBcTimeImprovOverevss{2047} & \amtVssEndToEndWcTimeImprovOverevss{2047} \\
+         & \amtVssDealTime{2047} & \amtVssVerifyTime{2047} & \amtVssReconstrBcTime{2047} & \amtVssReconstrWcTime{2047} & \amtVssEndToEndBcTime{2047} & \amtVssEndToEndWcTime{2047} & & \\
+        \addlinespace[0.4em]
+
+        \multirow{2}{*}{$n=4095$} & \evssVssDealTime{4095} & \evssVssVerifyTime{4095} & \evssVssReconstrBcTime{4095} & \evssVssReconstrWcTime{4095} & \evssVssEndToEndBcTime{4095} & \evssVssEndToEndWcTime{4095} & \amtVssEndToEndBcTimeImprovOverevss{4095} & \amtVssEndToEndWcTimeImprovOverevss{4095} \\
+         & \amtVssDealTime{4095} & \amtVssVerifyTime{4095} & \amtVssReconstrBcTime{4095} & \amtVssReconstrWcTime{4095} & \amtVssEndToEndBcTime{4095} & \amtVssEndToEndWcTime{4095} & & \\
+        \addlinespace[0.4em]
+
+        \multirow{2}{*}{$n=8191$} & \evssVssDealTime{8191} & \evssVssVerifyTime{8191} & \evssVssReconstrBcTime{8191} & \evssVssReconstrWcTime{8191} & \evssVssEndToEndBcTime{8191} & \evssVssEndToEndWcTime{8191} & \amtVssEndToEndBcTimeImprovOverevss{8191} & \amtVssEndToEndWcTimeImprovOverevss{8191} \\
+         & \amtVssDealTime{8191} & \amtVssVerifyTime{8191} & \amtVssReconstrBcTime{8191} & \amtVssReconstrWcTime{8191} & \amtVssEndToEndBcTime{8191} & \amtVssEndToEndWcTime{8191} & & \\
+        \addlinespace[0.4em]
+
+        \multirow{2}{*}{$n=16383$} & \evssVssDealTime{16383} & \evssVssVerifyTime{16383} & \evssVssReconstrBcTime{16383} & \evssVssReconstrWcTime{16383} & \evssVssEndToEndBcTime{16383} & \evssVssEndToEndWcTime{16383} & \amtVssEndToEndBcTimeImprovOverevss{16383} & \amtVssEndToEndWcTimeImprovOverevss{16383} \\
+         & \amtVssDealTime{16383} & \amtVssVerifyTime{16383} & \amtVssReconstrBcTime{16383} & \amtVssReconstrWcTime{16383} & \amtVssEndToEndBcTime{16383} & \amtVssEndToEndWcTime{16383} & & \\
+        \addlinespace[0.4em]
+
+        \multirow{2}{*}{$n=32767$} & \evssVssDealTime{32767} & \evssVssVerifyTime{32767} & \evssVssReconstrBcTime{32767} & \evssVssReconstrWcTime{32767} & \evssVssEndToEndBcTime{32767} & \evssVssEndToEndWcTime{32767} & \amtVssEndToEndBcTimeImprovOverevss{32767} & \amtVssEndToEndWcTimeImprovOverevss{32767} \\
+         & \amtVssDealTime{32767} & \amtVssVerifyTime{32767} & \amtVssReconstrBcTime{32767} & \amtVssReconstrWcTime{32767} & \amtVssEndToEndBcTime{32767} & \amtVssEndToEndWcTime{32767} & & \\
+        \addlinespace[0.4em]
+
+        \multirow{2}{*}{$n=65535$} & \evssVssDealTime{65535} & \evssVssVerifyTime{65535} & \evssVssReconstrBcTime{65535} & \evssVssReconstrWcTime{65535} & \evssVssEndToEndBcTime{65535} & \evssVssEndToEndWcTime{65535} & \amtVssEndToEndBcTimeImprovOverevss{65535} & \amtVssEndToEndWcTimeImprovOverevss{65535} \\
+         & \amtVssDealTime{65535} & \amtVssVerifyTime{65535} & \amtVssReconstrBcTime{65535} & \amtVssReconstrWcTime{65535} & \amtVssEndToEndBcTime{65535} & \amtVssEndToEndWcTime{65535} & & \\
+        \addlinespace[0.4em]
+
+        \multirow{2}{*}{$n=131071$} & \evssVssDealTime{131071} & \evssVssVerifyTime{131071} & \evssVssReconstrBcTime{131071} & \evssVssReconstrWcTime{131071} & \evssVssEndToEndBcTime{131071} & \evssVssEndToEndWcTime{131071} & \amtVssEndToEndBcTimeImprovOverevss{131071} & \amtVssEndToEndWcTimeImprovOverevss{131071} \\
+         & \amtVssDealTime{131071} & \amtVssVerifyTime{131071} & \amtVssReconstrBcTime{131071} & \amtVssReconstrWcTime{131071} & \amtVssEndToEndBcTime{131071} & \amtVssEndToEndWcTime{131071} & & \\
+        \addlinespace[0.4em]
+
+        \multirow{2}{*}{$n=262143$} & \evssVssDealTime{262143} & \evssVssVerifyTime{262143} & \evssVssReconstrBcTime{262143} & \evssVssReconstrWcTime{262143} & \evssVssEndToEndBcTime{262143} & \evssVssEndToEndWcTime{262143} & \amtVssEndToEndBcTimeImprovOverevss{262143} & \amtVssEndToEndWcTimeImprovOverevss{262143} \\
+         & \amtVssDealTime{262143} & \amtVssVerifyTime{262143} & \amtVssReconstrBcTime{262143} & \amtVssReconstrWcTime{262143} & \amtVssEndToEndBcTime{262143} & \amtVssEndToEndWcTime{262143} & & \\
+        \addlinespace[0.4em]
+
+        \multirow{2}{*}{$n=524287$} & \evssVssDealTime{524287} & \evssVssVerifyTime{524287} & \evssVssReconstrBcTime{524287} & \evssVssReconstrWcTime{524287} & \evssVssEndToEndBcTime{524287} & \evssVssEndToEndWcTime{524287} & \amtVssEndToEndBcTimeImprovOverevss{524287} & \amtVssEndToEndWcTimeImprovOverevss{524287} \\
+         & \amtVssDealTime{524287} & \amtVssVerifyTime{524287} & \amtVssReconstrBcTime{524287} & \amtVssReconstrWcTime{524287} & \amtVssEndToEndBcTime{524287} & \amtVssEndToEndWcTime{524287} & & \\
+        \addlinespace[0.4em]
+
+        \multirow{2}{*}{$n=1048575$} & \evssVssDealTime{1048575} & \evssVssVerifyTime{1048575} & \evssVssReconstrBcTime{1048575} & \evssVssReconstrWcTime{1048575} & \evssVssEndToEndBcTime{1048575} & \evssVssEndToEndWcTime{1048575} & \amtVssEndToEndBcTimeImprovOverevss{1048575} & \amtVssEndToEndWcTimeImprovOverevss{1048575} \\
+         & \amtVssDealTime{1048575} & \amtVssVerifyTime{1048575} & \amtVssReconstrBcTime{1048575} & \amtVssReconstrWcTime{1048575} & \amtVssEndToEndBcTime{1048575} & \amtVssEndToEndWcTime{1048575} & & \\
+        \addlinespace[0.4em]
+
+        \multirow{2}{*}{$n=2097151$} & \evssVssDealTime{2097151} & \evssVssVerifyTime{2097151} & \evssVssReconstrBcTime{2097151} & \evssVssReconstrWcTime{2097151} & \evssVssEndToEndBcTime{2097151} & \evssVssEndToEndWcTime{2097151} & \amtVssEndToEndBcTimeImprovOverevss{2097151} & \amtVssEndToEndWcTimeImprovOverevss{2097151} \\
+         & \amtVssDealTime{2097151} & \amtVssVerifyTime{2097151} & \amtVssReconstrBcTime{2097151} & \amtVssReconstrWcTime{2097151} & \amtVssEndToEndBcTime{2097151} & \amtVssEndToEndWcTime{2097151} & & \\
+        \addlinespace[0.4em]
+
+
+    \end{tabular}
+    \caption{
+        Detailed performance numbers from \cref{s:eval:vss} for \evss vs. \ourvss.
+    }
+    \label{t:vss-perf} % must go after \caption{} for \cref{} to work
+\end{table}
+

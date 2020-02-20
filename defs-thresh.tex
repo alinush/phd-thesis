@@ -1,0 +1,20 @@
+
+%
+% Names for our schemes
+%
+\newcommand{\jfdkg}{\ensuremath{\mathsf{JF}}-\ensuremath{\mathsf{DKG}}\xspace}   % Gennaro et al. abstraction for Pedersen's DKG
+\newcommand{\newdkg}{\ensuremath{\mathsf{New}}-\ensuremath{\mathsf{DKG}}\xspace} % Gennaro et al. DKG with Pedersen commitments and Feldman-verification for reconstruction of g^{z_i}'s
+\newcommand{\ejfdkg}{\ensuremath{\mathsf{eJF}}-\ensuremath{\mathsf{DKG}}\xspace} % Kate's DKG with PolyCommit
+\newcommand{\evss}{\ensuremath{\mathsf{eVSS}}\xspace}
+
+\newcommand{\ourvss}{\ensuremath{\mathsf{AMT}} \ensuremath{\mathsf{VSS}}\xspace}
+\newcommand{\ourdkg}{\ensuremath{\mathsf{AMT}} \ensuremath{\mathsf{DKG}}\xspace}  % Our DKG protocol
+
+
+%% WARNING: Used both as the AMT VSS/DKG dealer complexity and as the time to compute a multipoint evaluation.
+\newcommand{\amtDealTime}{\ensuremath{n\log{t}}\xspace}
+\newcommand{\amtOneShareVerifTime}{\ensuremath{\log{t}}\xspace}
+%% WARNING: Used both as the time to verify all shares, as the # of pairings computed during verification and as the communication complexity required to send all shares.
+\newcommand{\amtAllShareVerifTime}{\ensuremath{n\log{t}}\xspace}
+%% Proof size for AMT on poly of deg t-1 evaluated at n > t points is 1 + \log2floor(t-1)
+\newcommand{\amtProofSize}[1]{\ensuremath{\floor{\log{(#1-1)}} + 1}\xspace}

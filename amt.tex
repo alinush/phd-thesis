@@ -1,0 +1,184 @@
+In this section, we improve KZG's $\Theta(nt)$ time for computing $n$ proofs for a degree-bound $t$ polynomial to $\Theta(n\log{t})$ time.
+
+\section{Authenticated Polynomial Multipoint Evaluation Trees (AMTs)}
+Our key technique is to commit to the quotients in a polynomial multipoint evaluation (see~\cref{s:prelim:multipoint-eval}), obtaining an \textit{authenticated multipoint evaluation tree} (AMT).
+However, our new AMT evaluation proofs are logarithmic-sized, whereas KZG proofs are constant-sized.
+Throughout this section, we restrict ourselves to computing AMTs at points $\{1,2,\dots,n\}$ on polynomials of degree $t-1 < n$.
+(In \cref{s:amt:arbitrary-points}, we discuss generalizing to any set of points.)
+Finally, in \cref{s:amt:proofs}, we show AMT evaluation proofs are secure under $q$-SBDH.
+In contrast, KZG proofs are secure under a weaker assumption called $q$-SDH~\cite{BB08}.
+
+\subsection{Computing $n$ Evaluations Proofs in $n\log^2{n}$ time}
+\label{s:amt:computing-proofs}
+KZG evaluation proofs leverage the \textit{polynomial remainder theorem}: $\forall i\in \Fp, \exists q_i$ of degree $t-1$ such that $\phi(x) = q_i(x)(x-i) + \phi(i)$.
+Specifically, a constant-sized KZG proof for $\phi(i)$ is just a commitment to the quotient polynomial $q_i$ (see \cref{s:prelim:polycommit}) and takes $\Theta(t)$ time to compute.
+Thus, computing KZG proofs for each $i\in[n]$ takes $\Theta(nt)$ time.
+We improve on this by looking at $\phi(x)$ from the lens of a polynomial multipoint evaluation~\cite{vG13ModernCh10}.
+
+For example, consider the multipoint evaluation of $\phi$ at all $i\in[8]$ from \cref{f:multipoint-eval}.
+Note that every node in the multipoint evaluation tree stores a quotient and a remainder obtained by dividing the parent node's remainder by its accumulator polynomial (see \cref{s:prelim:multipoint-eval}).
+The first key idea is that, for any evaluated point $i\in[8]$, $\phi(x)$ can be expressed as $\phi(i)$ plus a linear combination of quotients and accumulator polynomials along the path to $\phi(i)$'s leaf in the multipoint evaluation tree.
+
+For example, consider $i=1$, which has the left-most path in tree.
+Start with the root node in \cref{f:multipoint-eval}, which says:
+$$\phi(x)=q_{1,8}(x) (x-1)\dots(x-8) + r_{1,8}(x).$$
+Then, expand $r_{1,8}(x)$ by going left in the tree (down towards $\phi(1)$'s leaf), obtaining:
+\begin{align*}
+\phi(x)& = q_{1,8}(x) (x-1)(x-2)(x-3)(x-4)\cdots(x-8) \\
+       & + q_{1,4}(x) (x-1)(x-2)(x-3)(x-4) + r_{1,4}.
+\end{align*}
+Repeat this process recursively by replacing $r_{1,4}(x)$ and then $r_{1,2}(x)$ to get:
+\begin{align*}
+\phi(x)& = q_{1,8}(x) (x-1)(x-2)(x-3)(x-4)\cdots(x-8) \\
+       & + q_{1,4}(x) (x-1)(x-2)(x-3)(x-4) \\
+       & + q_{1,2}(x) (x-1)(x-2) \\
+       & + q_{1,1}(x)(x-1) + \phi(1).
+\end{align*}
+Note that $\phi(x)$ can be re-expressed similarly for any other points $i\in [2,n]$.
+Importantly, note that there are only $\Theta(n)$ quotient and accumulator polynomials shared by all $\phi(i)$ expressions, $i\in[n]$.
+
+Our second key idea follows naturally: we commit to all these $\Theta(n)$ quotient polynomials in the multipoint evaluation of $\phi$.
+This gives us logarithmic-sized evaluation proofs for any point $i\in[n]$.
+We call these proofs \textit{AMT proofs}.
+For example, in \cref{f:multipoint-eval}, the AMT proof for $\phi(4)$ would be $\{g^{q_{1,8}(\tau)}, g^{q_{1,4}(\tau)}, g^{q_{3,4}(\tau)}, g^{q_{4,4}(\tau)}\}$, where $\tau$ denotes the trapdoor used in KZG commitments (see \cref{s:prelim:polycommit}).
+
+Recall that a multipoint evaluation of $\phi$ at $n$ points takes $\Theta(n\log^2{n})$ time (see \cref{s:prelim:multipoint-eval}).
+This asymptotically dominates the $\Theta(n\log{n})$ time to commit to the quotients.
+Thus, \textit{for now}, the time to compute an AMT is $\Theta(n\log^2{n})$.
+We explain how to speed this up to $\Theta(\amtDealTime)$ in \cref{s:amt:roots-of-unity} for a carefully selected set of $n$ evaluation points.
+
+\subsection{Verifying our New Evaluation Proofs}
+\label{s:amt:verifying-proofs}
+The next question is how to verify our new logarithmic-sized AMT proofs.
+Recall that, given any point $i$, $\phi(x)$ can be expressed as:
+\begin{align}
+\label{eq:amt-path}
+\phi(x) &= \phi(i) + \sum_{w\in \mathsf{\treepath(i)}} q_w(x) a_w(x)
+\end{align}
+where $\treepath(i)$ is the set of nodes along the path from the root to $\phi(i)$ and $q_w$ and $a_w$ denote the quotient and accumulator polynomials stored at node $w$ in the multipoint evaluation tree (see \cref{f:multipoint-eval}).
+How can we verify a proof $\pi_i = \left(g^{q_w(\tau)}\right)_{w\in\treepath(i)}$ for $\phi(i) = y_i$?
+We simply use a bilinear map to check that \cref{eq:amt-path} holds at $x=\tau$:
+\begin{align}
+\label{eq:amt-verify}
+e(g^{\phi(\tau)}, g) &\stackrel{?}{=} e(g^{y_i},g) \prod_{w\in\treepath(i)} e(g^{q_w(\tau)}, g^{a_w(\tau)}) \Leftrightarrow\\ \nonumber
+e(g, g)^{\phi(\tau)} &\stackrel{?}{=} e(g,g)^{y_i} \prod_{w\in\treepath(i)} e(g,g)^{q_w(\tau) a_w(\tau)}\Leftrightarrow\\ \nonumber
+e(g, g)^{\phi(\tau)} &\stackrel{?}{=} e(g,g)^{{y_i}+\sum_{i\in\treepath(w)} {q_w(\tau) a_w(\tau)}}\Leftrightarrow\\ \nonumber
+         \phi(\tau)  &\stackrel{?}{=} {y_i}+\sum_{w\in\treepath(i)} {q_w(\tau) a_w(\tau)}.
+\end{align}
+This is reminiscent of how KZG proofs are verified by checking that $\phi(x) = q_i(x)(x-i) + \phi(i)$ holds at $x=\tau$ (see \cref{s:prelim:polycommit}).
+However, note that \textit{the verifier needs to have the} $g^{a_w(\tau)}$ \textit{accumulator commitments}, which are not part of the AMT proof.
+This implies AMT verifiers must have $O(n)$ public parameters, whereas KZG verifiers only need $\{g^\tau\}$ as their public parameters (see \cref{s:prelim:polycommit}).
+Fortunately, in \cref{s:amt:public-parameters} we reduce the verifers' public parameters to just $\Theta(\log{t})$.
+
+\subsection{Homomorphic Proofs}
+\label{s:amt:homomorphic}
+\label{s:scalable-dkg:homomorphic-amt}
+%At the end of \ejfdkg's sharing phase, each player must aggregate all his shares, commitments and KZG proofs from the set of qualified players into a final share, commitment and proof (see \cref{alg:dkg}).
+%But for this to work in \ourdkg, AMT proofs must be \textit{homomorphic}: $\forall a\in\Fp$, a proof for $f_1(a)$ and a proof for $f_2(a)$ must be \textit{aggregated} into a proof for $(f_1+f_2)(a)$.
+AMT proofs are \textit{homomorphic}: a proof for $f_1(j)$ and a proof for $f_2(j)$, can be \textit{aggregated} into a proof for $(f_1+f_2)(j)$.
+The intuition for why this holds is that ``adding up'' the multipoint evaluation trees of two polynomials $\phi$ and $\rho$ at the same points (i.e., at $X=\{\omega_N^{j-1}\}_{j\in[n]}$) results in a multipoint evaluation tree of their sum $\phi+\rho$ (also at $X$).
+%(The evaluations have to be at the same set of points, say, $\{1,2,\dots,n\}$.)
+In more detail, let $q_{w, [\psi]}$ denote the quotient polynomial at node $w$ in $\psi$'s multipoint evaluation tree (at $X$).
+Then, one can show that $q_{w,[\phi+\rho]} = q_{w,[\phi]} + q_{w,[\rho]}$ and that $g^{q_{w,[\phi+\rho]}(\tau)} = g^{q_{w,[\phi]}(\tau) + q_{w,[\rho]}(\tau)} = g^{q_{w,[\phi]}(\tau)} g^{q_{w,[\rho]}(\tau)}$.
+In other words, given an AMT for $\phi$ and an AMT for $\rho$, we can obtain an AMT for $\phi+\rho$ by multiplying quotient commitments at each node.
+It follows that a proof for $f_1(a)$ and one for $f_2(a)$ can be aggregated into a proof for $(f_1+f_2)(a)$ by multiplying commitments at each node.
+
+\subsection{Better AMTs via Roots of Unity}
+\label{s:amt:roots-of-unity}
+Instead of evaluating $\phi$ at points $\{1,2,3,\dots,n\}$, we assume $n=2^m$ and evaluate $\phi$ at all $n$ $n$th roots of unity in $\Fp$.
+Specifically, we compute $\phi(\omega_n^{i-1})$ rather than $\phi(i)$, where $\omega_n$ is a primitive $n$th root of unity.
+(We can generalize to any $n$ by using the first $n$ $N$th roots of unity, where $N=2^m$ is the smallest value such that $N\ge n$.)
+
+The main benefit of using roots of unity is they give rise to simpler accumulator polynomials of the form $(x^{2^k} + c)$ in the multipoint evaluation tree (for some $c$).
+This speeds up the multipoint evaluation (see \cref{s:amt:proof-time-and-sizes}), since dividing degree-bound $2n$ polynomials by $(x^n + c)$ can be done in $\Theta(n)$ rather than $\Theta(n\log{n})$ time.
+In \cref{s:amt:proof-time-and-sizes}, we show this new, optimized AMT proof is $\amtProofSize{t}$ group elements and computing an AMT takes $\Theta(\amtDealTime)$ time.
+
+The $(x^{2^k} + c)$ form of the accumulators is best illustrated with an example.
+Let $n=8$ and $\omega_8$ denote a primitive 8th root of unity.
+Previously, in \cref{f:multipoint-eval}, the evaluation points $\{1,2,\dots,8\}$ were ordered as $\langle (x-1), (x-2),\dots, (x-8)\rangle$ monomials in the leaves.
+Then, the accumulators were computed by multiplying ``up the tree,'' culminating in the root accumulator $\prod_{i\in[8]}(x-i)$.
+In our case, the evaluation points are $\{\omega_8^{i-1}\}_{i\in[8]}$ but we reorder them using a bit-reversal permutation~\cite{bitreversal-wiki} as $\langle(x-\omega_8^0), (x-\omega_8^4), (x-\omega_8^2), (x-\omega_8^6), (x-\omega_8^1), (x-\omega_8^5), (x-\omega_8^3), (x-\omega_8^7)\rangle$.
+This ordering ensures that, as we multiply ``up the tree,'' all accumulators are of the form $(x^{2^k} + \omega_8^j)$ for some $j$.
+
+Let us see exactly how this happens.
+The parent accumulator of the first two leaves $(x-\omega_8^0)$ and $(x-\omega_8^4)$ is their product $(x-\omega_8^0)(x-\omega_8^4) = x^2 - \omega_8^4 x - \omega_8^0 x + \omega_8^0 \omega_8^4$.
+Since $\omega_n^i \omega_n^j = \omega_n^{(i+j) \bmod n}$~\cite{CLRS09}, this equals $x^2 - x(\omega_8^4 + \omega_8^0) + \omega_8^4$.
+Since $\omega_n^{k+n/2} = -\omega_n^k$~\cite{CLRS09}, this equals $(x^2 + \omega_8^4)$.
+The remaining accumulators after $(x^2 + \omega_8^4)$ on this level are $\{(x^2 + \omega_8^0), (x^2 + \omega_8^6), (x^2 + \omega_8^2)\}$.
+Recursing on the next level, its accumulators are $\langle(x^4 + \omega_8^4),(x^4 + \omega_8^0)\rangle$.
+Finally, the root will be $(x^8-\omega_8^0) = (x^8 - 1) = \prod_{i=0}^{7}(x-\omega_8^i)$.
+% bitreverse(000)=000=0
+% bitreverse(001)=100=4
+% bitreverse(010)=010=2
+% bitreverse(011)=110=6
+% bitreverse(100)=001=1
+% bitreverse(101)=101=5
+% bitreverse(110)=011=3
+% bitreverse(111)=111=7
+
+% bitreverse(00)=00
+% bitreverse(01)=10
+% bitreverse(10)=01
+% bitreverse(11)=11
+%
+% (x-w_4^0)(x-w_4^2) = (x^2 - x w_4^0 -x w_4^2 - w_4^2) = (x^2 - x (w_4^0 + w_4^2) - w_4^2).
+% recall that \omega_n^{k + n/2} = -\omega_n^k
+% since n = 4, we have w_4^{0+2} = -w_4^0
+% so we have (x^2 - w_4^2), which equals (x^2 + w_4^0) = (x^2 + 1)
+%
+% (x-w_4)(x-w_4^3) = (x^2 - x (w_4 + w_4^3) - w_4^4) = (x^2 - x (w_4 + w_4^3) - 1)
+% recall that \omega_n^{k + n/2} = -\omega_n^k
+% since n = 4, we have w_4^{1 + 2} = - w_4, i.e., w_4^3 = -w_4
+% so we have (x^2 - 1)
+
+\subsection{Prover Time and Proof Sizes}
+\label{s:amt:proof-time-and-sizes}
+We will restrict ourselves to our $n = 2^m$ and $\deg{\phi}=t-1 < n$ setting.
+We first show that computing our optimized, roots-of-unity-based AMT takes $O(n\log{t})$ time (see \cref{s:amt:roots-of-unity}).
+The key observation is that, when computing the AMT, divisions at higher levels (i.e., closer to the root) in the tree are \textit{trivial} and need not be performed.
+Specifically, at sufficiently high levels, the degree of the divisors (i.e., accumulators) are larger than the degrees of the dividends (i.e., remainders), and always give quotients equal to zero.
+Since zero quotients can be easily recreated by verifiers, their commitments need not be included in the proof.
+We expand on this next.
+
+Let us number levels differently, from $\log{n}$ (the root) to 0 (the leaves), so that level $i$ has $n/2^i$ nodes, each with an accumulator of degree $2^i$.
+Now, let $k$ be the smallest value such that $2^k \le \deg{\phi} < 2^{k+1}$.
+In other words, $k$ is the level at which accumulator degrees are $\le \deg{\phi}$ and thus divisions are non-trivial.
+Put differently, each node on level $k$ will be the root node of an (authenticated) multipoint evaluation (sub)tree.
+We argue that the time to compute any one such subtree is $O(2^k \log{2^k})$ and, since there are $n/2^k$ such subtrees, the final AMT takes $O(n\log{2^k}) = O(n\log{t})$ time since $2^k\le t-1=\deg{\phi}$.
+We prove this inductively next.
+
+At the root node of a level $k$ subtree, the dividend $d_k = \phi$ has $\deg{d_k} < 2^{k+1}$ (by definition of $k$ above).
+The accumulator $a_k$ has $\deg{a_k} = 2^k$.
+Thus, the quotient $q_k = d_k/a_k$ will have $\deg{q_k} = \deg{d_k}-\deg{a_k}< 2^{k+1} - 2^k = 2^k$ and the remainder $r_k = d_k \bmod a_k$ will have $\deg{r_k} < \deg{a_k} = 2^k$.
+The division at this level will only take $O(\deg{d_k})=O(2^{k+1})$ time, thanks to the $(x^{2^k} + c)$ form of $a_k$.
+Committing to the quotient will take $O(2^{k})$ time.
+To summarize, at level $k$ we are doing $O(2^{k+1})$ work and $\deg{d_k} < 2^{k+1}, \deg{a_k} = 2^k, \deg{q_k} < 2^k, \deg{r_k} < 2^k$.
+
+Next, we argue that the amount of work \textit{per node} on level $k-1$ is half the work per node at level $k$.
+This is because (1) the dividend $d_{k-1}$ is set to the remainder $r_k$ from the parent, so $\deg{d_{k-1}} < 2^k$, (2) $\deg{a_{k-1}}=2^{k-1}$, (3) $\deg{q_{k-1}} = \deg{d_{k-1}}-\deg{a_{k-1}}<2^k-2^{k-1}=2^{k-1}$ and (4) $\deg{r_{k-1}} < \deg{a_{k-1}}=2^{k-1}$.
+Thus, at level $k-1$, the division takes $O(2^k)$ time and committing to the quotient takes $O(2^{k-1})$ time.
+As a result, the time to compute the subtree can be expressed as $T(2^{k+1}) = 2T(2^{k+1} / 2) + O(2^{k+1}) = O(2^{k}\log{2^{k}})$.
+
+Finally, an AMT proof is $O(\log{t})$-sized.
+Recall that quotients in the AMT are non-zero only at levels $k$ and below, where $2^k \le t-1 < 2^{k+1}$.
+Thus, an AMT proof will only have non-zero quotients at levels $k, k-1, k-2, \dots, 1, 0$.
+Since $k = \floor{\log_2(t-1)}$ the exact proof size is $\floor{\log_2(t-1)}+1$ group elements.
+
+
+\subsection{Keeping (Almost) the Same Public Parameters}
+\label{s:amt:public-parameters}
+Do AMTs need extra public parameters, which would impose unwanted overhead in the trusted setup phase (see \cref{s:prelim:trusted-setup})?
+Recall that in KZG, given $(t-1)$-SDH public parameters, one can commit to any degree-bound $t$ polynomials and compute \textit{any number} of KZG evaluation proofs.
+In contrast, computing an AMT at $n > t-1$ points seems to require committing to degree $n > t-1$ accumulator polynomials (e.g., to the root accumulator $(x^n-1)$).
+Yet this is not possible given only $(t-1)$-SDH parameters, as ensured by the $(t-1)$-polyDH assumption (see \cref{def:q-polydh}).
+
+Fortunately, when computing an AMT, divisions by accumulators of degree $> t-1$ always give quotient zero (see \cref{s:amt:proof-time-and-sizes}).
+This means that, when pairing such quotients with their accumulators during proof verification, the result will always be $1_{\Group_T}$ (see \cref{eq:amt-verify}).
+In other words, such pairings need never be computed and so their corresponding accumulators (of degree $>t-1$) need never be committed to.
+Furthermore, quotients are not problematic since they always have degree $< \deg{\phi} = t-1$ (or are equal to zero).
+
+Second, AMT verifiers only need a logarithmic number of $g^{\tau^{2^k}}$ powers to recreate any accumulator commitment $g^{a_w(\tau)}$.
+(This is a bit worse than KZG verifiers, who only need $g^\tau$.)
+Specifically, given a subset $\{g^{\tau^{2^k}} \mathrel| 0 \le k\le \floor{\log(t-1)}\}$ of the $(t-1)$-SDH parameters, the verifier can commit to any degree-bound $t$ accumulator of the $(x^{2^k}+c)$ form.
+Thus, we impose no additional overhead in the trusted setup.
+In contrast, if we evaluated $\phi$ at $\{1,2,\dots, n\}$, verifiers would need all $(t-1)$-SDH public parameters to reconstruct the accumulators.

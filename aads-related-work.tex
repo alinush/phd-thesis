@@ -1,0 +1,62 @@
+The key difference between AADs and previous work~\cite{BuldasLaudLipmaa2000,ct,Ryan2014,aki,arpki,policert,coniks,dtki} is that we offer succinct proofs for everything while only relying on a single, untrusted log server.
+In contrast, previous work either has large proofs~\cite{ct,coniks}, requires users to ``collectively'' verify the log~\cite{Ryan2014,dtki} (which assumes enough honest users and can make detection slow), or makes some kind of trust assumption about one or more actors~\cite{ct,aki,arpki,policert}.
+On the other hand, previous work only relies on collision-resistant hash functions (CRHFs), which makes it computationally much cheaper.
+However, since communication is more expensive than computation, this is not always the right trade-off.
+
+In contrast, our bilinear constructions require trusted setup, large public parameters, and non-standard assumptions.
+Our RSA-based constructions eliminate some of these drawbacks, requiring no trusted setup and having constant-sized public parameters.
+Unlike previous work, our constructions are not yet practical due to their high append times and memory usage (see \cref{s:eval:append-time,s:eval:memory}).
+Finally, previous work~\cite{aki,arpki,dtki,policert} addresses in more depth the subtleties of log-based PKIs, while our work is focused on improving the transparency log primitive itself by providing succinct proofs with no trust assumptions.
+
+\paragraph{(E)CT.}
+Early work proposes the use of Merkle trees for public-key distribution but does not tackle the append-only problem, only offering succinct lookup proofs~\cite{crt,certificate-rev-upd,BuldasLaudLipmaa2000}.
+Accumulators are dismissed in~\cite{BuldasLaudLipmaa2000} due to trusted setup requirements.
+Certificate Transparency (CT)~\cite{ct} provides succinct append-only proofs via \textit{history trees} (HTs).
+Unfortunately, CT does not offer succinct lookup proofs, relying on users to download each update to the log to discover fake PKs, which can be bandwidth-intensive (see \cref{s:eval:worth-it}).
+Alternatively, users can look up their PKs via one or more CT \textit{monitors}, who download and index the entire log.
+But this introduces a trust assumption that a user can reach at least one honest CT monitor.
+Enhanced Certificate Transparency (ECT) addresses CT's shortcomings by combining a lexicographic tree with a chronologic tree, with collective verification by users.
+As discussed above, collective verification assumes enough honest users exist and can make detection of append-only breaks slow.
+Alternatively, ECT can also rely on one or more ``public auditors'' to verify correspondence of the two trees, but this introduces a trust assumption.
+
+\paragraph{A(RP)KI and PoliCert.}
+Accountable Key Infrastructure (AKI)~\cite{aki} introduces a checks-and-balances approach where log servers manage a lexicographic tree of certificates and so-called ``validators'' ensure log servers update their trees in an append-only fashion.
+Unfortunately, AKI must \textit{``assume a set of entities that do not collude: CAs, public log servers, and validators''}~\cite{aki}. 
+At the same time, an advantage of AKI is that validators serve as nodes in a gossip protocol, which helps detect forks.
+% PoliCert paper: "the achieved property is that with successfully registered SCP, an adversary even with n - 1 parties compromised, cannot launch impersonation attack undetectably, as n parties are actively involved in asserting correctness of SCPs and MSCs."
+ARPKI~\cite{arpki} and PoliCert~\cite{policert} extend AKI by providing security against attackers controlling $n-1$ out of $n$ actors.
+Unfortunately, this means ARPKI and PoliCert rely on an anytrust assumption to keep their logs append-only.
+On the other hand, AKI, ARPKI and PoliCert carefully consider many of the intricacies of PKIs in their design (e.g., certificate policies, browser policies, deployment incentives, interoperability).
+In addition, ARPKI formally verifies their design.
+
+\paragraph{CONIKS and DTKI.}
+CONIKS~\cite{coniks} periodically appends a digest of a prefix tree to a hash chain.
+However, users must collectively verify the tree remains append-only.
+Specifically, \textit{in every published digest}, each user checks that their own public key has not been removed or maliciously changed.
+Unfortunately, this process can be bandwidth-intensive when digests are published frequently (see \cref{s:eval:worth-it}).
+DTKI~\cite{dtki} observes that relying on a multiplicity of logs (as in CT) creates overhead for domain owners who must check for impersonation in every log.
+DTKI introduces a \textit{mapping log} that associates sets of domains to their own exclusive transparency log.
+Unfortunately, like ECT, DTKI also relies on users to collectively verify its many logs.
+To summarize, while previous work~\cite{aki,arpki,policert,dtki} addresses many facets of the transparent PKI problem, it does not address the problem of building a transparency log with succinct proofs without trust assumptions and without collective verification.
+
+\paragraph{Byzantine Fault Tolerance (BFT).}
+If one is willing to move away from the single untrusted server model, then a transparency log could be implemented using BFT protocols~\cite{Lamport1982TheByzantine,pbft,bitcoin}.
+In fact, BFT can trivially keep logs append-only and provide lookup proofs via sorted Merkle trees.
+With permissioned BFT~\cite{pbft}, one must trust that two thirds of BFT servers are honest.
+While we are not aware of permissioned implementations, they are worth exploring.
+For example, in the key transparency setting, it is conceivable that CAs might act as BFT servers.
+With permissionless BFT~\cite{bitcoin,ethereum}, one needs a cryptocurrency secured by proof-of-work or proof-of-stake.
+Examples of this are Namecoin~\cite{namecoin}, Blockstack~\cite{blockstack} and EthIKS~\cite{ethiks}.
+
+\paragraph{Formalizations.}
+Previous work formalizes Certificate Transparency (CT)~\cite{transparency-overlays,secure-logging-schemes-and-ct} and general transparency logs~\cite{transparency-overlays}.
+In contrast, our work formalizes append-only authenticated dictionaries (AAD) and sets (AAS), which can be used as transparency logs.
+Our AAD abstraction is more expressive than the \textit{dynamic list commitment (DLC)} abstraction introduced in~\cite{transparency-overlays}.
+Specifically, DLCs are append-only lists with non-membership by insertion time, while AADs are append-only dictionaries with non-membership by arbitrary keys.
+Nonetheless, AADs can easily associate each key-value pair to its insertion time securely via Merkle aggregation~\cite{ht}.
+This way, AADs can easily support non-membership by insertion time as well.
+Finally, previous work carefully formalizes proofs of misbehavior for transparency logs~\cite{transparency-overlays,secure-logging-schemes-and-ct}.
+Although misbehavior in AADs is provable too, we do not formalize this in the paper.
+
+Neither our work nor previous work adequately models the network connectivity assumptions needed to detect forks in a gossip protocol.
+Lastly, previous work improves or extends transparency logging in various ways but does not tackle the append-only problem~\cite{ct-with-privacy,insynd,lwm}.

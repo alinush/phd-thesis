@@ -1,0 +1,282 @@
+In this section, we change our bilinear-based AAS from \cref{s:aas:from-bilinear-acc}, which we dub \biaas, into an RSA-based AAS, which we dub \rsaaas.
+This transformation is natural, since our \biaas design is not dependent on the implementation of the underlying accumulator.
+% Requirements for AAS/AAD accumulators:
+%  - Need subset witnesses for append-only proofs in forest, for memb proofs and for frontier proofs. 
+%  - Need disjointness for frontier. 
+%  - Precomputing O(1) witnesses like in RSA can also be helpful, both for the frontier and the forest.
+In fact, any accumulator that supports subset witnesses and disjointness witnesses suffices to implement our design.
+Even better, RSA accumulators' $\Theta(n\log{n})$ time to precompute all membership witnesses will reduce the asymptotic frontier proof sizes in our AAS from logarithmic to constant.
+
+Before introducing \rsaaas, we first describe how to enhance RSA accumulators with subset witnesses and disjointness witnesses.
+Our enhancements build upon Boneh et al.'s~\cite{BBF18,BBF19} PoKE protocols (see \cref{s:prelim:poke-hidden-order}).
+We do not prove security of these new RSA accumulator witnesses.
+Instead, we prove our AAS construction based on these witnesses, is secure in \cref{s:aas:from-rsa-acc:proofs}.
+
+\subsection{Subset and Disjointness Witnesses for RSA Accumulators}
+\label{s:aas:from-rsa-acc:rsa-acc-enhance}
+
+Boneh et al. present a \textit{union witness} for proving that two RSA accumulators over sets $A, B$ have been ``unioned'' into a single RSA accumulator over $A\cup B$.
+The witness size is three group elements and two $\lambda$-bit numbers.
+This union witness can be re-purposed as a subset witness between two accumulators over sets $A \subseteq B$.
+Since this witness is rather large, we introduce a new, smaller-sized subset witness that only uses one \poketwo proof (see \cref{s:prelim:poke2}).
+
+\paragraph{Subset Witnesses.}
+Given sets $A\subseteq B$, and their RSA accumulators $a=\mathsf{acc}(A),b=\mathsf{acc}(B)$, naively proving that $A\subseteq B$ would involve sending all elements in their difference $B\backslash A$.
+Then, the verifier would check this (potentially very large) \textit{subset witness} as follows:
+\begin{align*}
+    a^{\prod_{e\in{B\backslash A}} e} = b
+\end{align*}
+
+We immediately notice that the \poketwo protocols can save the verifier time and communication in verifying the above equation.
+Let $x=\prod_{e\in{B\backslash A}} e$ be the exponent from the equation above.
+Then, the prover can use the \poketwo protocol to prove that it knows $x$ such that $a^x = b$, without having to send $x$ to the verifier and without the verifier having to perform the (potentially very expensive) $a^x$ exponentiation.
+In other words, we get a \textit{constant-sized} subset witness for $A \subseteq B$ that can be verified in constant-time.
+Finally, this witness can be computed in $\Theta(|B\backslash A|)$ time.
+
+\paragraph{Disjointness Witnesses.}
+Using similar ideas, we also construct a \textit{disjointness witness} for RSA accumulators.
+Given sets $A\cap B=\varnothing$ with RSA accumulators $a,b$, we can compute \bezout coefficients $x,y$ such that:
+\begin{align*}
+    x \left(\prod_{e\in A} e\right) + y \left(\prod_{e\in B} e\right) = 1
+\end{align*}
+Naively, a (potentially large) disjointness witness would consist of the \bezout coefficients $x,y$ which are as large as $\prod_{e\in B} e$ and $\prod_{e\in A} e$, respectively.
+The verifier would check the equality from above holds ``in the exponent'':
+\begin{align}
+    a^{x} b^{y} &= g\Leftrightarrow\\
+    \label{eq:rsa-acc-disjoint}
+    \left(g^{\prod_{e\in A} e}\right)^x \left(g^{\prod_{e\in B} e}\right)^y &= g\Leftrightarrow\\
+    g^{x\prod_{e\in A} e + y\prod_{e\in B} e} &= g\Leftrightarrow\\
+    x \left(\prod_{e\in A} e\right) + y \left(\prod_{e\in B} e\right) &= 1.
+\end{align}
+Fortunately, \poketwo proofs can be used to avoid sending $x, y$, resulting in a constant-sized disjointness witness.
+Specifically, the prover sends two \poketwo proofs, one for $a^x = u$ and another for $b^y = w$.
+The verifier checks the two \poketwo proofs and then checks that $u\cdot w = g$ to make sure \cref{eq:rsa-acc-disjoint} holds.
+To compute the witness, the prover spends $\Theta(n\log^2{n}\log\log{n})$ time to compute \bezout coefficients~\cite{Schonhage71}, where $n=\max(|A|,|B|)$, and $\Theta(n)$ time to compute the two \poketwo proofs.
+Finally, our disjointness witness can be made smaller by aggregating the two \poketwo proofs~\cite{BBF18}.
+
+\subsection{From Bilinear-based to RSA-based AAS}
+\label{s:aas:from-rsa-acc:changes}
+
+Replacing the bilinear accumulator in \biaas (see \cref{s:aas:from-bilinear-acc}) with an RSA accumulator (see \cref{s:prelim:rsa-acc}) together with some adjustments gives us an RSA-based AAS which we call \rsaaas.
+This construction has several advantages over \biaas.
+First, it only requires constant-sized public parameters.
+Second, it does not inherently require a trusted setup phase (see \cref{s:prelim:trusted-setup-rsa}).
+Third, its (non)membership proof size decreases from $O(\log^2{n})$ to $O(\log{n})$.
+Finally, at the level of implementation, our memory consumption should also decrease, since FCTs are no longer required.
+
+At the same time, \rsaaas inherits some of the disadvantages of RSA accumulators (see \cref{s:prelim:rsa-acc}).
+First, because group elements in hidden-order groups are larger than in prime (known) order groups, our subset witnesses will be slightly larger than in \biaas.
+Second, appends will be slower because RSA accumulator and witness computation is slower.
+Third, even though we showed how to extend RSA accumulators with subset and disjointness witnesses, our witnesses incur the overheads of \poketwo proofs (see \cref{s:prelim:poke2}).
+Finally, RSA accumulators require elements to be primes, which involves expensive hashing.
+
+In the rest of this section, we highlight the differences between \biaas and \rsaaas.
+
+\paragraph{Hashing to Primes.}
+A key difference in \rsaaas is that prefixes of appended keys need to be hashed to their \textit{prime representatives} via a hash function $\Hprime : \{0,1\}^* \rightarrow \primes(2\lambda)$.
+This is because, when enhanced with disjointness witnesses, RSA accumulators require the accumulated elements to be primes (see \cref{s:prelim:rsa-acc}).
+This is similar to \biaas, which also requires hashing the prefixes of keys, but to a finite field $\Fp$.
+% Note: Hashing in \biaas can be eliminated by numbering sparse-prefix tree nodes from 0 to p-1. 
+% But our sparse trees have more than p nodes and p is only 254 bits, so this only works with large fields and does not save much time anyway to be worth increasing the field size.
+Although, in \rsaaas, the hashing of prefixes to primes is much more expensive since it involves primality testing.
+For example, hashing to a prime takes $\approx 1$ millisecond while hashing to $\Fp$ takes $\le 1$ microsecond.
+
+\paragraph{Constant-sized Public Parameters and (No) Trusted Setup.}
+First, since RSA accumulators have constant-sized public parameters, \rsaaas has constant-sized public parameters for the server and clients.
+In contrast, \biaas has $q$-SDH public parameters with $q=\Theta(\lambda n)$ for the server and $q=\Theta(\lambda)$ for the client.
+Second, if the RSA accumulator is instantiated over \textit{class groups}, then the AAS scheme does not require a trusted setup (see \cref{s:prelim:trusted-setup-rsa}).
+Even if instantiated over $\ZNstar$, the trusted setup ceremony would be much simpler.
+This makes \rsaaas much easier to instantiate in practice.
+
+\paragraph{Logarithmic Append-only and (Non)membership Proofs.}
+First, recall that \biaas used \textit{\prefixCommunionTrees} (PCTs) to precompute all \textit{logarithmic-sized} membership \& append-only proofs and used \textit{\frontierCommunionTrees} (FCTs) to precompute all non-membership proofs.
+\rsaaas does the same, except it optimizes FCTs and, optionally, PCTs.
+First, given the frontier $F(S)$ of a set $S$, we immediately notice that we can use RSA fast witness precomputation (see \cref{s:prelim:rsa-acc}) to obtain all \textit{constant-sized} frontier proofs in $\Theta(|F(S)|\log{|F(S)|})$ time.
+Looked at differently, we obtain an FCT of height one: the root is the RSA frontier accumulator of $S$, while the leaves are the elements of $S$ and their RSA membership witnesses.
+As a consequence, the AAS non-membership proof, which consists of $O(\log{n})$ frontier proofs, is now $O(\log{n})$-sized, an asymptotic improvement over \biaas.
+We believe this could also translate to a concrete improvement in proof sizes.
+
+Second, the same technique can (optionally) be applied for the PCT, to precompute constant-sized RSA witnesses for all prefixes in $\prefixes(S)$.
+Then, an AAS membership proof for $k$ would consist of $\Theta(\lambda)$ witnesses, one for each prefix of $k$.
+% Note: A key question is how fast can they be aggregated, since we would be doing EEAs on ever increasing numbers.
+These witnesses can be aggregated efficiently using techniques from~\cite{BBF19} into a single constant-sized witness, reducing the AAS membership proof size to $O(1)$, which is an asymptotic improvement over \biaas.
+However, to save computation time, the server can choose not to deploy this improvement and use traditional PCTs only, maintaining logarithmic-sized AAS membership proofs.
+(Indeed, our security proof from \cref{s:aas:from-rsa-acc:proofs} assumes traditional PCT-based membership proofs for \rsaaas.)
+In contrast, for the frontier, we stress that \rsaaas always uses the RSA witness precomputation trick to reduce AAS non-membership proof to logarithmic size.
+
+% Q: Because we are not limited by public params, we could do compressed prefix trees here no? and get rid of the \lambda overhead?
+% A: We could but we're still limited by the depth of the compressed prefix tree, which has to be fixed at every level in the forest in order for the subset witnesses to work.
+% Otherwise, we could have two forest leaves with different keys: 00* and 01* that each store prefix trees 0 and 0 which, when maliciously merged as prefix tree 0 (rather than {00,01}), could not reliably answer queries of the form is key 01* in the tree?
+% The key problem w/ compressed tries is that acc(prefix) = 0 tells us 'prefix' is in the trie while acc(prefix) \ne 0 tells us nothing (whether bilinear/RSA/VC): prefix could either not be in the trie, or it could be in the trie but has no conflict so it was not inserted to achieve compression.
+
+\subsection{Asymptotic Analysis}
+\label{s:aas:from-rsa-acc:asymptotics}
+As in \cref{s:aas:from-bilinear-acc:asymptotics}, suppose we have a \textit{worst-case} AAS with $n$ = $2^i - 1$ elements, but based on RSA accumulators.
+
+\paragraph{Append-time.}
+As before, consider the time $T(n)$ to create an AAS over a set $S$ with $n = 2^\ell$ elements (without loss of generality).
+Then, $T(n)$ can be broken into:
+\begin{itemize}
+    \item The time to create each children AAS of size $n/2$ (i.e., $2T(n/2)$).
+    \item The time to merge these two children, which can be broken into:
+    \begin{itemize}
+        \item Computing an RSA prefix accumulator for $S$ in $\Theta(\lambda n)$ time.
+        \item Computing subset witnesses between $S$'s prefix accumulator and each of its two children's prefix accumulators in $\Theta(\lambda n)$ time.
+        %   O(\lambda n\log^2{\lambda n}\log\log{\lambda n})
+        % = O(\lambda n
+        %        (\log{\lambda}+\log{n})(\log{\lambda}+\log{n})
+        %         \log{\log{n}+\log\lambda})
+        % = O(\lambda n
+        %        (\log{\lambda}+\log{n})(\log{\lambda}+\log{n})
+        %         \log{\log{n}})
+        % = O(\lambda n
+        %        (\log^2{\lambda}+2\log{\lambda}\log{n}+\log^2{n})
+        %         \log{\log{n}})
+        % = O(\lambda n
+        %         \log^2{n}
+        %         \log{\log{n}})
+        \item Computing the FCT of $S$, which requires $\Theta(\lambda n\log^2{n}\log\log{n})$ time for the \bezout coefficients and $\Theta(\lambda n \log{n})$ time for the frontier proofs (via the RSA fast membership witness precomputation trick from \cref{s:prelim:rsa-acc}).
+    \end{itemize}
+\end{itemize}
+
+% Detailed analysis of $T(n) = 2T(n/2) + O(n\log^2{n}\log\log{n})$ below:
+%\begin{align}
+%T(2^k)
+%  &= 2T(2^{k-1}) + O(2^k\log^2{(2^k)}\log\log{2^k})\\
+%  &= 2T(2^{k-1}) + O(2^k k^2\log{k})\\
+%  &= 2\left(2T(2^{k-2}) + O\left(2^{k-1} {(k-1)}^2\log{(k-1)}\right)\right) + O(2^k k^2\log{k})\\
+%  % Note: Does not fit
+%  % &= 2\left(2\left(2T(2^{k-3}) + O\left(2^{k-2} {(k-2)}^2\log{(k-2)}\right)\right) + O\left(2^{k-1} {(k-1)}^2\log{(k-1)}\right)\right) + O(2^k k^2\log{k})\\
+%  &= \dots\\
+%  &= 2^k O(1) + \sum_{i=0}^k O\left(2^{k} {i}^2\log{i}\right)\\
+%  &= O(2^k) + \sum_{i=1}^k O\left(2^{k} {i}^2\log{i}\right)\\
+%  &\le O(2^k) + k \cdot O\left(2^{k} {k}^2\log{k}\right)\\
+%  &\le O(2^k) + O\left(2^{k} {k}^3\log{k}\right)
+%\end{align}
+Thus, the \textit{amortized} time for one append is $O(\lambda \log^3 {n}\log\log{n})$, which is higher by a factor of $\log\log{n}$ than in the bilinear AAS (see \cref{s:aas:from-bilinear-acc:asymptotics}).
+Appends can be de-amortized into \textit{worst-case} time using generic techniques~\cite{overmars,overmars-van-leeuwen}.
+
+\paragraph{Space, Digests, Append-only Proofs and Membership Proofs.}
+Here, \rsaaas has the same overheads as \biaas, which are discussed in \cref{s:aas:from-bilinear-acc:asymptotics}:
+\begin{itemize}
+    \item $\Theta(\lambda n)$ space.
+    \item $O(\log{n})$ digests, which can be made $\Theta(1)$.
+    \item $\Theta(\log{n})$ membership and append-only proofs.
+\end{itemize}
+However, \rsaaas can support $\Theta(1)$ membership witnesses (see \cref{s:aas:from-rsa-acc:changes}), but only with extra computation during appends and by keeping digests of size $O(\log{n})$.
+% Note: Would need to investigate asymptotics for a set of size N to aggregate all O(\lambda) proofs in each of the N leafs.
+
+\paragraph{Non-membership Proof Size.}
+Recall that \biaas had $\Theta(\log^2{n})$ sized proofs because, in the worst-case, a frontier proof in each of the $\Theta(\log{n})$ FCTs would need to be sent.
+Fortunately, since frontier proofs in our case are $\Theta(1)$-sized, this reduces our non-membership proof size to $\Theta(\log{n})$. 
+
+\paragraph{Public Parameters.}
+Unlike \biaas, \rsaaas has constant-sized public parameters, both on the server and client side.
+
+\subsection{Security Proofs}
+\label{s:aas:from-rsa-acc:proofs}
+
+In these proofs, we ignore Merkle hashing, which is done for fork consistency purposes.
+Instead, we assume that the digest of the AAS only contains the root prefix accumulators in the forest (rather than Merkle root hashes).
+The proof with Merkle hashing would not differ much.
+For example, we give such a proof for the bilinear AAS in \cref{s:aas:from-bilinear-acc:proofs:membership-security}.
+
+We also assume that the RSA witness precomputation trick is not used to precompute constant-sized AAS membership proofs.
+(This assumption actually makes the security proof slightly more complex.)
+However, recall that this trick is always used to precompute all constant-sized frontier proofs (and reduce AAS non-membership proof size to logarithmic).
+
+\subsubsection{Append-only Security}
+\label{s:aas:from-rsa-acc:proofs:append-only-security}
+
+Suppose an adversary \Adv breaks append-only security (see \cref{def:aas:appendonly-security}) and outputs:
+\begin{itemize}
+\item Two digests $d\ne d'$,
+\item A valid membership proof $\pi$ for a key $k$ in $d$,
+\item A valid append-only proof $\pi^\subseteq$ from $d$ to $d'$,
+\item A valid non-membership proof $\pi'$ for the same key $k$ in $d'$.
+\end{itemize}
+
+Then, we can build another adversary \AdvB that breaks the Strong RSA assumption (see \cref{s:prelim:strong-rsa}) as follows.
+First, \AdvB runs \Adv and obtains $(d,d',\pi^\subseteq,k,\pi,\pi')$.
+
+Since $\pi$ proves that $k$ is in the AAS with digest $d$, then $\pi$ will consist of a path of accumulators with subset witnesses, from $k$'s leaf to a root accumulator in $d$.
+Let $a_\ell$ denote this accumulator and $\ell+1$ denote the length of the path (i.e., the number of nodes, including the leaf and the root node).
+Let $a_0$ be the leaf accumulator over all prefixes of $k$.
+Note that the verifier, in this case \AdvB, reconstructs $a_0=g^z, z = \prod_{\rho\in\prefixes(k)} \Hprime(\rho)$ from the key $k$.
+
+Let $(a_i)_{i\in[1,\ell)}$ and $(\pi_i^\in)_{i\in[0,\ell)}$ denote the accumulators and subset witnesses, respectively, from the membership proof $\pi$.
+% $\pi_i^\in = (z^\in_i, Q^\in_i, r^\in_i)$
+Recall that a subset witness $\pi_i^\in$ is a \poketwo proof that the prover knows an $x_i^\in \in \Z$ such that $a_{i}^{x_i^\in} = a_{i+1}$ (for all $i\in[0,\ell)$).
+In particular, since this is a proof of \textit{knowledge}~\cite{GMR85}, an \textit{extractor} exists that \AdvB can use to obtain the exponents $x_i^\in \in \Z,\forall i\in[0,\ell)$.
+Let $x^\in = \prod_{i \in [0,\ell)} x_i^\in$, which \AdvB can compute, and note that $\left(a_0\right)^{x^\in} = a_\ell$.
+
+The append-only proof $\pi_{i,j}$ ``connects'' all root accumulators from digest $d$ to one root accumulator in $d'$ via subset witnesses.
+Let this root accumulator in $d'$ be denoted by $a_{\ell'}$, where $\ell' \ge \ell$ is the height of the tallest tree in $d'$.
+(Importantly, it could be that $a_\ell = a_\ell'$; e.g., $\pi_{2,3}$ in \cref{f:forest}.)
+% e.g., when \ell = \ell':   0 accs, 0 subset witnesses
+% e.g., when \ell = \ell'+1: 0 accs, 1 subset witness
+% e.g., when \ell = \ell'+2: 1 acc,  2 subset witnesses
+Then, amongst other paths, $\pi_{i,j}$ contains a path of accumulators $(a_i)_{i\in(\ell,\ell')}$ with subset witnesses $(\pi_i^\subseteq)_{i\in[\ell,\ell')}$.
+As before, $\pi_i^\subseteq$ is a \poketwo proof of knowledge for an $x_i^\subseteq \in \Z$ such that $a_{i}^{x_i^\subseteq} = a_{i+1}$ and this $x_i^\subseteq$ can be extracted by \AdvB (for all $i\in[\ell,\ell')$).
+Let $x^\subseteq = \prod_{i \in [\ell,\ell')} x_i^\subseteq$, which \AdvB can compute, and note that $\left(a_\ell\right)^{x^\subseteq} = a_{\ell'}$.
+ 
+Since $\pi'$ proves that $k$ is \textit{not} in the AAS with digest $d'$, then $\pi'$ has to prove that $k$ is not in any of the root accumulators from $d'$.
+In particular, it has to prove non-membership of $k$ in $a_{\ell'}$.
+For this, $\pi'$ includes the frontier accumulator $f_{\ell'}$ corresponding to $a_{\ell'}$ together with a disjointness witness $(u,v,\mathsf{poke}_u,\mathsf{poke}_v)$, which proves knowledge of \bezout coefficients $\alpha,\beta$ such that $(a_{\ell'})^\alpha = u$ and $(f_{\ell'})^\beta = v$ where $u\cdot v = g$.
+As before, \AdvB can extract $\alpha$ and $\beta$.
+Finally, $\pi'$ proves membership in $f_{\ell}$ of a prefix $\rho$ of $k$ with prime representative $e=\Hprime(\rho)$.
+In other words, $\pi'$ includes an RSA membership witness $w$ such that $w^e = f_{\ell'}$.
+
+At this point, recall that \AdvB computed $a_0=g^{z}$ where $z=\prod_{\rho\in\prefixes(k)} \Hprime(\rho)$.
+Importantly, the prime representative $e$ divides $z$ (since it is one of the prefixes of $k$) and \AdvB can compute $c=z/e$.
+In other words, $a_0 = g^{e c}$.
+
+Now, \AdvB can break Strong RSA by noticing that:
+\begin{align*}
+    \left(a_{\ell'}\right)^\alpha \left(f_{\ell'}\right)^\beta &= g\Leftrightarrow\\
+    \left(\left(a_{\ell}\right)^{x^\subseteq}\right)^\alpha \left(w^e\right)^\beta &= g\Leftrightarrow\\
+    \left(\left(a_0\right)^{x^\in}\right)^{\alpha x^\subseteq} w^{e\beta} &= g\Leftrightarrow\\
+    \left(a_0\right)^{\alpha x^\in x^\subseteq} w^{e\beta} &= g\Leftrightarrow\\
+    \left(g^{e c}\right)^{\alpha x^\in x^\subseteq} w^{e\beta} &= g\Leftrightarrow\\
+    g^{e c \alpha x^\in x^\subseteq} w^{e\beta} &= g\Leftrightarrow\\
+    \left(g^{c \alpha x^\in x^\subseteq} w^{\beta}\right)^e &= g.
+\end{align*}
+
+Thus, \AdvB computes $y = g^{c \alpha x^\in x^\subseteq} w^{\beta}$.
+Since $e$ is a prime and $y^e = g$, \AdvB breaks Strong RSA (see \cref{def:strong-rsa}).
+
+\subsubsection{Membership Security}
+\label{s:aas:from-rsa-acc:proofs:membership-security}
+
+This proof proceeds in the same style as the append-only security proof from \cref{s:aas:from-rsa-acc:proofs:append-only-security}.
+Suppose an adversary \Adv breaks membership security (see \cref{def:aas:membership-security}) and outputs:
+\begin{itemize}
+\item A digests $d$,
+\item A valid membership proof $\pi$ for a key $k$ in $d$,
+\item A valid non-membership proof $\pi'$ for the same key $k$ in $d$.
+\end{itemize}
+
+Then, we can build another adversary \AdvB that breaks the Strong RSA assumption (see \cref{s:prelim:strong-rsa}) as follows.
+First, \AdvB runs \Adv and obtains $(d,k,\pi,\pi')$.
+
+Our reasoning is the same as in \cref{s:aas:from-rsa-acc:proofs:append-only-security}.
+Let $a_0$ denote the leaf accumulator over $k$'s prefixes and $a_\ell$ denote the root accumulator where $k$'s membership is proven.
+Since $\pi$ proves that $k$ is in the AAS with digest $d$, ultimately, the adversary \AdvB can extract and compute $x^{\in}\in \Z$ such that $\left(a_0\right)^{x^\in} = a_\ell$.
+Since $\pi'$ proves that $k$ is \textit{not} in the AAS with digest $d$, then $\pi'$ has to prove non-membership of $k$ in $a_{\ell}$.
+To do this, $\pi'$ proves membership of a prefix $\rho$ of $k$ with prime representative $e$ in the frontier accumulator $f_\ell$ which is provably disjoint from $a_\ell$.
+Specifically, $\pi'$ contains $w$ such that $w^e = f_\ell$.
+As in \cref{s:aas:from-rsa-acc:proofs:append-only-security}, from the disjointness witness between $a_\ell$ and $f_\ell$, \AdvB extracts \bezout coefficients $\alpha,\beta$ such that $(a_{\ell})^\alpha = u$ and $(f_{\ell})^\beta = v$ where $u\cdot v = g$.
+Recall from \cref{s:aas:from-rsa-acc:proofs:append-only-security} that \AdvB computes $c$ and $a_0=g^{e c}$ where $c =\left(\prod_{\rho\in\prefixes(k)} \Hprime(\rho)\right) / e$.
+
+Now, \AdvB can break Strong RSA by noticing that:
+\begin{align*}
+    \left(a_{\ell}\right)^\alpha \left(f_{\ell}\right)^\beta &= g\Leftrightarrow\\
+    \left(\left(a_0\right)^{x^\in}\right)^{\alpha} w^{e\beta} &= g\Leftrightarrow\\
+    \left(a_0\right)^{\alpha x^\in} w^{e\beta} &= g\Leftrightarrow\\
+    \left(g^{e c}\right)^{\alpha x^\in} w^{e\beta} &= g\Leftrightarrow\\
+    g^{e c \alpha x^\in} w^{e\beta} &= g\Leftrightarrow\\
+    \left(g^{c \alpha x^\in} w^{\beta}\right)^e &= g.
+\end{align*}
+
+Thus, \AdvB computes $y = g^{c \alpha x^\in} w^{\beta}$.
+Since $e$ is a prime and $y^e = g$, \AdvB breaks Strong RSA (see \cref{def:strong-rsa}).

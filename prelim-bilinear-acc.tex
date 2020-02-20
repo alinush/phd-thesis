@@ -1,0 +1,54 @@
+\textit{Bilinear accumulators} were introduced by Nguyen~\cite{Nguyen05}.
+Damg{\aa}rd and Triandopoulos later extended them with non-membership witnesses~\cite{DT08}.
+Canard and Gouget introduce subset witnesses, but only prove the security of the ecash scheme built on top of the witnesses~\cite{CG10}. 
+Papamanthou et al.~\cite{PTT11} later formalized and instantiated subset, intersection and set difference witnesses.
+They proved security of these witnesses under $\ell$-SBDH (see \cref{def:q-sbdh}).
+
+\paragraph{Setup.}
+Bilinear accumulators are \textit{bounded}, which means they can only commit to sets of at most $\ell$ elements.
+Their setup involves two steps.
+First, a prime-order group with bilinear maps must be generated (see \cref{s:prelim:pairings}).
+Second, one must generate $\ell$-SDH public parameters:
+$$\PPsdh_\ell(g;\tau) = \langle g,g^\tau,g^{\tau^2},\dots, g^{\tau^\ell} \rangle\ \text{where}\ \tau\in_R \Zp^*$$
+For this, a \textit{trusted setup ceremony} can be used that computes the $g^{\tau^i}$ powers and ``forgets'' $\tau$~\cite{zcash-mpc1,zcash-mpc2}.
+Importantly, this ceremony can be implemented as an MPC protocol over multiple parties (see \cref{s:prelim:trusted-setup}).
+
+\paragraph{Committing to a Set.}
+Let $T = \{e_1, e_2, \dots, e_n\}$ denote a set of elements.
+Let $\charpoly_T(x) = (x-e_1)(x-e_2)\cdots(x-e_n)$ denote the \textit{characteristic polynomial} of $T$.
+The accumulator $\mathsf{acc}(T)$ of $T$ is computed as $\mathsf{acc}(T) = g^{\charpoly_T(\tau)} = g^{(\tau-e_1)(\tau-e_2)\cdots(\tau-e_n)}$.
+Given coefficients $c_0, c_1, \dots, c_{n}$ of $\charpoly_T(\cdot)$ where $n \le \ell$, the accumulator is computed \textit{without knowledge} of $\tau$ as follows:
+\begin{align*}
+\small
+\mathsf{acc}(T)
+    &= g^{c_0} (g^\tau)^{c_1} (g^{\tau^2})^{c_2} \cdots (g^{\tau^{n}})^{c_{n}}
+    = g^{c_0 + c_1 \tau + c_2 \tau^2 \cdots c_{n} \tau^{n}}
+    = g^{\charpoly_T(\tau)}
+\end{align*}
+In other words, the server computes a KZG commitment (see \cref{s:prelim:polycommit:kzg}) to the characteristic polynomial of $T$.
+Since the accumulator only supports elements from $\Fp$, we assume an injective function $\Hp: \mathcal{D}\rightarrow \Fp$ that maps elements to be accumulated from any domain $\mathcal{D}$ to values in $\Fp$.
+If $|\mathcal{D}|>|\Fp|$, then $\Hp$ can be a collision-resistant hash function (CRHF).
+
+\paragraph{Membership Witnesses.}
+A \textit{prover} who has $T$ can convince a \textit{verifier} who has $\mathsf{acc}(T)$ that an \textit{element} $e_i$ is in the set $T$.
+The prover simply convinces the verifier that $(x-e_i) \mathrel| \charpoly_T(x)$ by presenting a KZG commitment $\pi=g^{q(\tau)}$ to a quotient polynomial $q(\cdot)$ such that $\charpoly_T(x) = (x-e_i)q(x)$.
+Using a bilinear map, the verifier checks the property above holds at $x=\tau$.
+\begin{align*}
+e(g, \mathsf{acc}(T)) &\stackrel{?}{=} e(\pi, g^\tau / g^{e_i}) \Leftrightarrow\\
+e(g, g)^{\charpoly_T(\tau)} &\stackrel{?}{=} e(g,g)^{(\tau-e_i)q(\tau)}\Leftrightarrow\\
+\charpoly_T(\tau) &\stackrel{?}{=} (\tau-e_i)q(\tau)
+\end{align*}
+
+This membership witness can be proven secure under the $\ell$-SDH assumption~\cite{KZG10a}.
+Bilinear accumulators also support non-membership witnesses~\cite{DT08}, but this thesis does not make (direct) use of them.
+
+\paragraph{Subset and Disjointness Witnesses.}
+To prove that $A\subseteq B$, the prover shows that $\charpoly_A(x) \mathrel| \charpoly_{B}(x)$.
+Specifically, the prover presents a KZG commitment $\pi=g^{q(\tau)}$ of a quotient polynomial $q(\cdot)$ such that $\charpoly_B(x) = q(x)\charpoly_A(x)$.
+The verifier checks that $e(g, \mathsf{acc}(B)) = e(\pi, \mathsf{acc}(A))$.
+
+To prove that $A\cap B = \varnothing$, the prover uses the Extended Euclidean Algorithm (EEA)~\cite{vG13ModernCh11} to compute \bezout coefficients $y(\cdot)$ and $z(\cdot)$ such that $y(x)\charpoly_A(x) + z(x)\charpoly_B(x) = 1$.
+The witness consists of a KZG commitment to the \bezout coefficients $\gamma = g^{y(\tau)}$ and $\zeta = g^{z(\tau)}$.
+The verifier checks that $e(\gamma,\mathsf{acc}(A))e(\zeta, \mathsf{acc}(B)) = e(g,g)$.
+By setting $B=\{e\}$, we get a new type of non-membership witness for $e\notin A$, different than the one by Damg{\aa}rd and Triandopoulos~\cite{DT08}.
+Both subset and disjointness witnesses can be proven secure under $q$-SBDH (see \cref{def:q-sbdh}).

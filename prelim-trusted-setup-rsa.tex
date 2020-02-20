@@ -1,0 +1,13 @@
+% The group Z_n* is cyclic only if n=2,4,p^k,2p^k (for odd primes p and positive integers k)
+% See https://crypto.stanford.edu/pbc/notes/numbertheory/gengen.html
+There are two efficient ways of instantiating a hidden-order group $\GroupHidOrd$.
+The first is to pick an RSA modulus $N=pq$ as the product of two large primes $p,q$ and set $\GroupHidOrd$ to be $\ZNstar=\{a \mid \gcd(a,N)=1\}$ or a subgroup of $\ZNstar$ such as $\QRN$.
+The main drawback of this approach is the party who picks $p$ and $q$ knows the order $\varphi(N)=(p-1)(q-1)$ of the group.
+Thus, to avoid a trusted setup, a distributed key generation (DKG) protocol should be run amongst $n$ players that jointly pick such an $N$ without learning the factorization~\cite{BonehFranklin1997}.
+Recently, efficient DKG protocols have been proposed for the $n=2$ setting~\cite{HMRT12,Frederiksen2018}.
+Protocols that are run by $n>2$ parties also exist but are less efficient and do not scale to a large $n$~\cite{DM10}.
+
+The second way is to work with \textit{class groups of imaginary quadratic order}~\cite{Buchmann1988,Buchmann2001}.
+Unlike $\ZNstar$, a class group can be picked at random without a trusted setup.
+It is believed that determining the order of such a group is computationally infeasible.
+Although class groups are relatively new, they have recently received increased interest ~\cite{Damgaard2002,Lipmaa2012,Pietrzak2018,Wesolowski19,BBF19,Boneh2018ASurvey,AltugChen2018}.

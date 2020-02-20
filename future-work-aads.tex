@@ -1,0 +1,159 @@
+
+\section{Append-only Authenticated Data Structures}
+\label{s:future-work:aads}
+
+\subsection{Improving Our Current AADs}
+\label{s:future-work:aads:current}
+
+\subsubsection{De-amortization}
+\label{s:future-work:aads:current:deamor}
+In \cref{s:aas:from-bilinear-acc,s:aad:from-acc}, we mentioned that our \textit{amortized} append time can be de-amortized to a worst-case time using known, generic techniques for any static data structure~\cite{overmars,overmars-van-leeuwen}.
+However, we did not investigate the details of how to do this \textit{efficiently} in this thesis.
+We believe it would be interesting future work to optimize such a de-amortized construction.
+
+\subsubsection{Compressed Tries}
+\label{s:future-work:aads:current:compressed-tries}
+
+A big source of overhead in our AAS and AAD are the ``sparse'' tries of height $2\lambda$ (see \cref{s:aas:from-bilinear-acc,s:aad:from-acc:short}) and $4\lambda$ (see \cref{s:aad:from-acc:tall}), respectively.
+Replacing these with a compressed trie of height $h = O(\log{n})$ would drastically reduce append times, server storage and server memory.
+
+For now, let us focus on the AAS.
+Suppose we limit all trie heights to some arbitrary $h$ (e.g., $h = 32$).
+At the same time, we redefine the frontier of such tries to consist, as before, of nodes that (1) are not in the trie but have parents in the trie and that (2) are at depth $\le h$. 
+(The root node is at depth 0 and a trie with $h=0$ has just one node: the root.)
+% Note: can do multiset union for prefix accumulators and use the root frontier accumulators only to prove exclusion of a key! This also saves time on computing subset witnesses if we use symmetric pairings.
+
+%Recall that each node in the PCT stores a prefix accumulator over the trie in that node.
+Immediately, we notice this design suffers from ambiguity.
+Consider two elements $e_1,e_2$ that have the same first $h$ bits.
+Recall that these bits are used to determine a path in the trie.
+Unfortunately, since $e_1$ and $e_2$ have the same first $h$ bits, this path cannot be used to tell which one of them was inserted.
+In fact, it could be that none of them was inserted (e.g., another element $e_3$ with the same first $h$ bits was inserted.)
+In contrast, when the trie height was $2\lambda$, no such ambiguity was possible, unless $e_1$ and $e_2$ had the same cryptographic hash, which would imply a collision in the CRHF.
+Nonetheless, we believe additional techniques can be used to disambiguate between such conflicting elements, at the cost of slightly increasing lookup proof size.
+We leave exploring this to future work.
+
+\subsubsection{Reducing Server Space}
+\label{s:future-work:aads:current:multiset-prefix-acc}
+Our current approach for proving completeness for lookup proofs in \biaadset and \rsaaadset set requires FCTs at every node in the forest.
+This spikes storage to $O(\lambda n \log{n})$ on the server, as opposed to $O(\lambda n)$ for our previous approach from \cref{s:aad:from-acc:tall}.
+An interesting question is if we can avoid this space increase while maintaining $O(2\lambda n)$ public parameters by removing the need for FCTs at internal nodes in the forest.
+%Our previous approach relied on proving non-membership of the key $k$ in all missing subtrees of the pruned proof tree, via frontier proofs.
+%This convinced clients that all key value pairs $(k,v)$ have been revealed.
+
+A promising approach could be changing the prefix accumulators to be multisets rather than sets of prefixes.
+This would allow the server to prove that all $m$ paths to a key $k$ have been given by showing that the root prefix accumulator accumulates $k$'s prefixes with multiplicity \textit{exactly} equal to $m$.
+This approach will concretely increase the server's public parameters size to \textit{exactly} $\ell = (2\lambda+1){n}$, within our $O(2\lambda n)$ upper bound.
+We leave efficiently precomputing such proofs (perhaps via AMTs; see \cref{s:amt}) and determining the increase in public parameters on the client to future work.
+We believe this ``prefix multiset accumulator'' approach could also be used in combination with our ``compressed trie'' approach (see \cref{s:future-work:aads:current:compressed-tries}).
+
+\subsubsection{Speeding up Frontier Proofs via AMTs}
+\label{s:future-work:aads:current:amt-frontiers}
+Our frontier technique from \cref{s:aas:from-bilinear-acc:fct} is just a precomputation technique.
+Specifically, it proves that for each prefix $\rho$ at the frontier of a trie, $\rho$ is \textit{not} accumulated in the prefix accumulator corresponding to that trie.
+Let $\alpha$ denote the characteristic polynomial committed in that prefix accumulator.
+In other words, our frontier technique precomputes all proofs for $\alpha(\rho)\ne 0$ by computing proofs for $\phi(\rho)=0$ and for $\gcd(\alpha,\phi)=1$.
+However, in \cref{s:amt}, we introduced an AMT technique that does exactly this, without resorting to disjointness proofs.
+Thus, we hope to use AMTs to improve our frontier proof sizes and computation times in future work.
+
+\subsubsection{Parallelizing RSA-based Accumulators}
+A big source of overhead in our RSA-based AAD is committing to RSA accumulators and witnesses.
+These commitments consist of an inherently unparallelizable exponentiation with a huge exponent.
+(Indeed, this difficulty to parallelize is leveraged to build \textit{verifiable delay functions}~\cite{Boneh2018ASurvey,Wesolowski19,Pietrzak2018}.)
+Thus, an interesting direction would be to develop \textit{parallelizable} RSA accumulators that support committing to sets and computing witnesses faster.
+
+One avenue for doing this is an RSA-based polynomial commitment scheme.
+Recent work~\cite{BFS19} shows how to build such constant-sized polynomial commitments with logarithmic-sized evaluation proofs from hidden-order groups (see \cref{s:prelim:hidden-order-groups}).
+Importantly, unlike RSA accumulators, these RSA polynomial commitments seem to support parallelizing the computation of a commitment.
+This could significantly speed up our RSA-based AAD.
+
+\subsubsection{AADs from The Generic Group Model}
+Our \biaad implementation using Type III pairings incurs significant overhead from having to compute extractable counterparts of elements.
+It is worth exploring if hierarchical accumulator-based constructions such as our \communionTree (CT) techniques have security proofs that do not require these extractable counterparts.
+One such construction is our AMTs from \cref{s:amt} which, although hierarchical, can be proven secure under $q$-SBDH.
+We leave it to future work to find such security proofs, perhaps in the generic group model.
+
+\subsection{New AAD Constructions}
+
+\subsubsection{Lower bounds for CRHF-based AAS}
+Before exploring new constructions, we should better understand what can(not) be done with simple cryptographic tools such as \textit{collision-resistant hash functions} (CRHFs).
+We hope to prove lower bounds about what can be achieved with CRHFs in future work.
+
+\subsubsection{AADs from Lattices}
+It would be theoretically-interesting to construct AADs from lattice-based cryptography~\cite{Peikert15}.
+In particular, we believe modifications of Ajtai-based hash functions~\cite{Ajtai96,GGH11} might prove useful for this.
+For example, the hash function proposed by Papamanthou et al.~\cite{PSTY13} has enough algebraic structure to give rise to a cryptographic accumulator.
+Thus, if enhanced with a subset witness, it could be used to build an AAD.
+We leave this to future work.
+
+\subsubsection{AADs from Argument Systems}
+\label{s:snarks}
+% NOTE: https://youtu.be/jEHOZbKSHNI?t=547
+%  - Aurora has O_k(N log N) prover time, O_k(log^2{N}) proof size and O_k(N) verification time, where k is a sec param
+%
+% NOTE: https://youtu.be/Y2HLlr3-MGA?t=1364
+%  - Aurora and Ligero have O(n) verification time: 
+%  - but STARK verifier complexity is wrong, since it should be polylog, I think (not linear)
+%
+% NOTE: Detailed table of complexities here: https://eprint.iacr.org/2019/099.pdf
+%  - Bulletproofs is O(n log n) verifier
+%  - says STARK verifier is polylog 
+%  - Hyrax complexity 
+%
+% NOTE: https://github.com/elibensasson/libSTARK also says STARK verifier is polylog
+
+% d = depth of circuit
+% n = circuit size
+% Aurora:       transparent, PQ, \log^2{n} proof (220KB for n = 10^6), n\log{n} proving time, O(n) verification
+% Ligero:       like aurora, except \sqrt{n} proof (4 MB)
+% Hyrax:        like aurora, no PQ, except d\log{n} proof (50 KB)
+% Bulletproofs: like aurora, no PQ, except \log{n} proof (1.5KB)
+% STARK:        like aurora, except bigger constants for proof sizes (3.2 MB), verification time seems to be faster than SNARKs
+% Kalai's new:  verification cost and proof size linear in the circuit depth, linear CRS, still requires trusted setup
+%
+% Micali's CS proofs: "Finally, Micali raises similar goals to ours in his work on computationally sound (CS) proofs [Mic94]. His results are however obtained in the random oracle model. This allows him to achieve CS-proofs for the correctness of general time computations with a nearly linear time verifier, a prover whose runtime is polynomial in the time complexity of the computation, and a poly-log length non-interactive (“written down” rather than interactive) proof." from GKR15 paper
+%
+% Summary: too large proofs, too large verification time, and unclear (concrete) prover complexity, since some of these use PCPs (e.g., STARKs).
+%
+A promising direction for future work is to build AADs from generic argument systems~\cite{groth10,groth16,qsp,cs-proofs,aurora,bulletproofs,ligero,hyrax,stark}.
+Such AAD constructions would also require non-standard assumptions~\cite{GentryWichs2011}, possibly different than $q$-PKE (e.g., random oracle model, generic group model, etc.).
+Depending on the argument system, they might or might not require trusted setup and large public parameters.
+
+A static AAD can be built from an argument system (e.g., a SNARK~\cite{groth16,qsp}) as follows.
+The AAD maintains one unsorted tree $U$ and one sorted tree $S$ whose leaves are sorted by key. 
+The digest of the AAD consists of (1) the Merkle roots $(d(S), d(U))$ of $S$ and $U$ and (2) a SNARK \textit{proof of ``correspondence''} $\pi(S,U)$  between $S$ and $U$.
+This proof shows that $S$'s leaves are the same as $U$'s \textit{but in a different, sorted by key, order}.
+The SNARK circuit takes as input $U$'s leaves and $S$'s leaves, hashes them to obtain $d(U)$ and $d(S)$ and checks that $S$'s leaves are sorted by key.
+
+Now, given a digest $(d(S), d(U), \pi(S,U))$, lookups can be efficiently proven using Merkle proofs in the sorted tree $S$.
+The append-only property of two digests $(d(S), d(U), \pi(S,U))$ and $(d(S'), d(U')$, $\pi(S',U'))$ can be efficiently proven using an append-only proof between $d(U)$ and $d(U')$, since $U$ and $U'$ are just history trees~\cite{ht}.
+This proves $U$ is a subset of $U'$ and, crucially, it also proves that $S$ is a subset of $S'$, since the SNARK $\pi(S,U)$ proves that $S$ ``corresponds'' to $U$ and $S'$ to $U'$.
+Unfortunately, updates would invalidate the SNARK proof and would require time at least linear in the dictionary size to recompute this proof.
+However, we can apply the same Overmars technique~\cite{overmars,overmars-van-leeuwen} to make updates polylogarithmic time.
+(This would now require a family of circuits, one for each size $2^i$ of the trees.)
+
+This approach would result in much shorter lookup proofs while maintaining the same efficiency for append-only proofs, since state-of-the-art SNARKs have proofs consisting of just 3 group elements~\cite{groth16}.
+% $O(\log^2{n})$ lookup proofs, $O(\log{n})$ append-only proofs, $O(n)$ storage and, we estimate, $O(\log^3{n})$ append time if instantiated with state-of-the art SNARKs~\cite{groth16}.
+On the other hand, this approach might need more public parameters and could have slower appends.
+This is because, even with SNARK-friendly hashes (e.g., Ajtai-based~\cite{cycles-of-ec}, MiMC~\cite{mimc} or Jubjub~\cite{jubjub}), we estimate the number of multiplication gates for hashing trees of size $2^{20}$ to be in the billions.
+(And we are not accounting for the gates that verify tree $S$ is sorted.)
+In contrast, the degrees of the polynomials in our bilinear-based constructions are only in the hundreds of millions for dictionaries of size $2^{20}$.
+
+Nonetheless, optimizing such a solution would be interesting future work.
+For example, replacing SNARKs with STARKs~\cite{stark} would eliminate the large public parameters and the trusted setup, at the cost of larger append-only proofs.
+This may well be worth it if the proof size and prover time are not too large.
+Other argument systems such as Hyrax~\cite{hyrax}, Ligero~\cite{ligero} and Aurora~\cite{aurora} could achieve the same result.
+Unfortunately, Aurora and Ligero would increase the append-only proof verification time to linear, which could be prohibitive.
+Bulletproofs~\cite{bulletproofs} would further increase this verification time to quasilinear.
+Hyrax can make this time sublinear if the circuit is sufficiently parallel or has ``a wiring pattern [that] satisfies a technical regularity condition''~\cite{hyrax}.
+
+\paragraph{Recursively-Composable Arguments.}
+Another interesting approach is to obtain AADs from recursively-composable SNARKs~\cite{cycles-of-ec,BitanskyCanettiChiesaTromer2013,BGH19,COS19}.
+Such SNARKs could structure the verification of the append-only property recursively so that circuits need not operate on the entire dictionary, thus lowering overheads.
+We are aware of concurrent work that explores this approach, but unfortunately it is not peer-reviewed nor published in an online archive.
+While such an approach could be very promising, currently implemented systems operate at the 80-bit security level.
+This is because increasing the security of the elliptic curves used in recursive SNARK constructions is costly, since they have low embedding degree~\cite{cycles-of-ec}.
+% For BN254: \sqrt{p/q} = \sqrt{2^220/2^20} = 2^100
+In contrast, our implementation is 100-bit-secure after accounting for recent progress on computing discrete logs~\cite{MenezesSarkarSingh2017} and our $q$-SDH assumption with $q=2^{20}$~\cite{BB08}.
+% For BLS12-318: \sqrt{p/q} = \sqrt{2^256/2^20} = \sqrt{2^236} = 2^118
+We can increase this to 118 bits, with no loss in performance, by adopting 128-bit-secure BLS12-381 curves~\cite{bls12-381-switch}.

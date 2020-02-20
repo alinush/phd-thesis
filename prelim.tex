@@ -1,0 +1,117 @@
+Let $\lambda$ denote a security parameter for the many cryptosystems presented in this thesis.
+Let $\Hb$ denote a collision-resistant hash function (CRHF) with $2\lambda$-bits output.
+We use multiplicative notation for all algebraic groups in this thesis.
+Let $\Fp$ denote the finite field ``in the exponent'' associated with a group $\Group$ of prime order $p$.
+Let $\Zp=\{0,1,2,\dots,p-1\}$ denote the finite field of integers modulo a prime $p$.
+Let $\Fp[X]$ denote all univariate polynomials with coefficients in $\Fp$.
+Let $1_{\Group}$ denote the identity element of a group $\Group$.
+We use $\Group = \langle g \rangle$ to indicate $g$ is a \textit{generator} of the group $\Group$.
+Let $s \in_R S$ denote sampling an element $s$ uniformly at random from some set $S$.
+Let $\deg{\phi}$ denote the degree of a univariate polynomial $\phi$.
+We say a polynomial $\phi$ has \textit{degree-bound} $m$ if $\deg{\phi} < m$.
+Let $\poly(\cdot)$ denote any function upper-bounded by some univariate polynomial.
+Let $\log{x}$ be shorthand for $\log_2{x}$.
+Let $[n] = \{1,2,\dots,n\}$ and $[i,j] = \{i,i+1,\dots,j-1,j\}$.
+
+In this thesis, we assume group and field operations can be performed in $O(1)$ time.
+This means the security parameter $\lambda$ will not typically show up in our complexities.
+For example, we say multiplying two field elements takes $O(1)$ time rather than  $O(\lambda\log\lambda\log\log\lambda)$ time, which is typically the case.
+
+\comment{
+\section{Group Theory}
+\label{s:prelim:group-theory}
+We assume the reader is familiar with the definition of a \textit{group} and \textit{subgroup}.
+
+\begin{definition}[Generating set of a group]
+A \textit{generating set} of a group is a subset of the group such that every element in the group can be expressed as a combination (under the group operation) of finitely many elements of this subset and their inverses.
+\end{definition}
+
+\begin{definition}[Cyclic groups]
+A group is \textit{cyclic} if the size of its generating set is one.
+\end{definition}
+% NOTE: Says nothing about how many generators the group has.
+% {1, g, g^2, ..., g^{n-1}} 
+%           \---{ multiply by g }---> {g, g^2, g^3, ..., g^n = 1} 
+%                                       \---{ shift right with rotation }---> {1, g, g^2, ..., g^n} =>
+% If g is a generator, so is g^k, \forall k \in [n-1]
+% "There are exactly $\phi(n)$ elements in a cyclic group of order n which generate the entire group ($\phi$ is the Euler phi function)
+% (https://math.stackexchange.com/questions/964784/cyclic-group-generators#comment1981875_964784)
+
+\begin{theorem}[Lagrange]
+\label{thm:lagrange-subgroup}
+For every subgroup $H$ of the finite group $G$, the order of $H$ divides that of $G$.
+\end{theorem}
+} % end of \comment{}
+
+\section{Cryptographic Assumptions}
+\label{s:prelim:assumptions}
+
+\subsection{Bilinear Pairings}
+\label{s:prelim:pairings}
+
+Our work relies on the use of \emph{pairings} or \emph{bilinear maps}~\cite{MVO91,Joux00}.
+Recall that a bilinear map $e(\cdot,\cdot)$ has useful algebraic properties: $e(g^a, g^b) = e(g^a, g)^b = e(g, g^b)^a = e(g, g)^{ab}$. 
+For clarity, our cryptosystems are all presented using Type~I pairings~\cite{GPS08}.
+Nonetheless, our results can be re-stated using (the more efficient) asymmetric Type~II and~III pairings in a straightforward manner.
+In fact, all our implementations use (the more efficient) Type~III asymmetric pairings.
+We often discuss the implications of this in our experiments.
+
+\begin{definition}[Bilinear pairing parameters]
+\label{def:bilinear-pairing-parameters}
+Let $\groupkosetup(\cdot)$ be a randomized, polynomial-time algorithm with input a security parameter $\lambda$.
+% -- begin multiline --
+Then, $\langle \Group, \GT, p, g, e\rangle \leftarrow \groupkosetup(1^\lambda)$ are called \textit{bilinear pairing parameters} if,
+\begin{itemize}
+\item $\Group=\langle g\rangle$ and $\GT$ are cyclic groups of prime (known) order $p$
+\item No PPT adversary can solve discrete log (DL) in $\Group$ nor in $\GT$, except with probability negligible in $\lambda$
+\item $e : \Group\times \Group \rightarrow \GT$ is a bilinear map such that $\GT = \langle e(g,g) \rangle$ (i.e., $e(g,g)$ generates $\GT$).
+\end{itemize}
+% -- end multiline --
+\end{definition}
+
+\subsection{$\ell$-Strong (Bilinear) Diffie-Hellman}
+\label{s:prelim:sbdh}
+
+\begin{definition}[$\ell$-Strong Diffie-Hellman (SDH) Assumption]
+\label{def:q-sdh}
+Given as input security parameter $1^\lambda$, bilinear pairing parameters $\langle \Group, \GT, p, g, e\rangle \leftarrow \groupkosetup(1^\lambda)$,
+%with $\lambda$ bits of discrete-log security, 
+public parameters  $\PPsdh_\ell(g;\tau)=\langle g, g^\tau, g^{\tau^2}, \dots, g^{\tau^\ell}\rangle$ where $\ell = \poly(\lambda)$ and $\tau$ is chosen uniformly at random from $\Zp^*$, no probabilistic polynomial-time adversary can output a pair $\langle c, g^\frac{1}{\tau+c}\rangle$ for some $c \in \Zp \backslash \{-\tau\}$, except with probability negligible in $\lambda$.
+\end{definition}
+
+\begin{definition}[$\ell$-Strong Bilinear Diffie-Hellman (SBDH) Assumption]
+\label{def:q-sbdh}
+Given as input security parameter $1^\lambda$, bilinear pairing parameters $\langle \Group, \GT, p, g, e\rangle \leftarrow \groupkosetup(1^\lambda)$,
+%with $\lambda$ bits of discrete-log security, 
+public parameters  $\PPsdh_\ell(g;\tau)=\langle g, g^\tau, g^{\tau^2},\allowbreak \dots, g^{\tau^\ell}\rangle$ where $\ell = \poly(\lambda)$ and $\tau$ is chosen uniformly at random from $\Zp^*$, no probabilistic polynomial-time adversary can output a pair $\langle c, e(g,g)^\frac{1}{\tau+c}\rangle$ for some $c \in \Zp \backslash \{-\tau\}$, except with probability negligible in $\lambda$.
+\end{definition}
+
+\subsection{$\ell$-Power Knowledge of Exponent}
+\label{s:prelim:pke}
+
+First, let us define the public parameters associated with the $\ell$-Power Knowledge of Exponent ($\ell$-PKE) assumption as:
+\begin{align*}
+\PPpke_\ell(g; \tau,\beta)  &= \langle g,g^\tau, g^{\tau^2},\dots,g^{\tau^\ell},g^{\beta\tau}, g^{\beta\tau^2},\dots,g^{\beta\tau^\ell}\rangle
+\end{align*}
+
+% Note: Adversary is given g^{s^i} and g^{\tau s^i} but not given \tau and outputs (c', c) s.t. c' = c^\tau. 
+% The assumption says that the only way the adversary can output such a tuple, is by setting c = {g^{s^i}}^a_i and c' = {g^{\tau s^i}}^a_i for *known* a_i's. In other words, if c \ne g^{a_i s^i}.
+\begin{definition}[$\ell$-Power Knowledge of Exponent ($\ell$-PKE) Assumption]
+\label{def:q-pke}
+For all probabilistic polynomial-time adversaries $\Adv$, there exists a probabilistic polynomial time extractor $\chi_A$ such that for all \emph{benign} auxiliary inputs $z \in \{0,1\}^{\poly(\lambda)}$ 
+\begin{align*}
+\Pr \left[ \begin{array}{c}
+    \langle \Group, \GT, p, g, e\rangle \leftarrow \groupkosetup(1^\lambda); \langle \tau, \beta \rangle \in_R \Zp^*,\\
+    \sigma \leftarrow \langle \Group, \GT, p, g, e, \PPpke_\ell(g; \tau, \beta)\rangle,\\
+    \langle c, \hat{c}; a_0, a_1, \dots, a_\ell\rangle \leftarrow (\Adv||\chi_\Adv)(1^\lambda,\sigma,z):\\
+    \hat{c} = c^\beta \wedge c \ne g^{\prod_{i=0}^\ell {a_i \tau^i}}
+\end{array} \right] \le \mathsf{negl}(\lambda)
+\end{align*}
+where $\langle y_1; y_2\rangle \leftarrow (\Adv||\chi_\Adv)(x)$ means $\Adv$ returns $y_1$ on input $x$ and $\chi_A$ returns $y_2$ given the same input $x$ and $\Adv$'s random tape.
+Auxiliary input $z$ is required to be drawn from a benign distribution to avoid known negative results associated with knowledge-type assumptions~\cite{BP15,BCPR14}.
+\end{definition}
+
+The $\ell$-PKE assumption is non-standard and often referred to as ``non-falsifiable'' in the literature.
+This terminology can be confusing, since previous, so-called ``non-falsifiable'' assumptions have been falsified~\cite{BP04c}.
+Naor explored the nuance of these types of assumptions and proposed thinking of them as ``not efficiently falsifiable''~\cite{Naor03On}.
+For example, to falsify $\ell$-PKE one must find an adversary $\Adv$ that outputs $\hat{c} = c^\beta$ and then mathematically prove that \textit{all} extractors $\chi_\Adv$ fail for it.

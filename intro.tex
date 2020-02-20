@@ -1,0 +1,233 @@
+\section{How to Share a Public Key}
+\label{s:intro:part1}
+
+Almost every cryptographic scheme assumes actors know each other's public keys.
+This assumption is often referred to as the \textit{public key infrastructure} (PKI) assumption.
+For example, a PKI enables users to safely shop online on Amazon.com, to message each other securely on WhatsApp, and to use social media on LinkedIn.com.
+Yet, despite their absolute necessity for security, state of the art PKIs remain inadequate in several ways.
+
+First, PKIs rely on the unreasonable assumption of \textit{trusted parties}.
+For example, Facebook, who develops and owns WhatsApp, runs a \textit{public key directory} (PKD) mapping each user's phone number to that user's public key.
+This \textit{centralized} control of the PKD by Facebook is quite natural. 
+After all, the PKD is a crucial component of WhatsApp's infrastructure and needs incentives to be maintained, incentives which Facebook has.
+Unfortunately, this centralized approach assumes we live in a world where Facebook cannot be compromised or coerced.
+In reality, mass surveillance revelations tell us the exact opposite story~\cite{EdSnowden,AAB+15}.
+Thus, it is not unfathomable for a rogue Facebook to \textit{man-in-the-middle} ``secure'' WhatsApp conversations.
+Indeed, this would not be too difficult either.
+To snoop on two users, say \textit{\alice} and \textit{\bob}, Facebook need only \textit{equivocate} about their public keys in the PKD.
+
+Second, when trusted parties go rogue, \textit{PKI attacks cannot be easily detected by victims} like Alice and Bob.
+We focus on ``detection'' rather than ``prevention,'' since it is impossible to prevent PKI attacks in this strong, pessimistic model where trusted parties can go rogue.
+Fortunately, post-attack detection is still possible, although not always easily achieved, as we detail next.
+
+Consider the following (rather contrived) example.
+\alice and \bob's WhatsApp conversation is man-in-the-middled by Facebook.
+Fortunately, they both ``record'' all of their encrypted WhatsApp traffic.
+They then meet in a coffee shop, inspect this traffic and notice that, at some point, their public keys were changed to unrecognized \textit{fake} ones that were subsequently used to encrypt their messages.
+% Bob notices in Alice's recorded traffic that his public key was changed.
+% Alice notices in Bob's traffic that her public key was changed too.
+They then conclude a man-in-the-middle attack occurred.
+However, their effort is considerable and does not scale to detecting attacks in multiple conversations.
+Thus, more efficient detection methods are needed.
+
+Third, (some) PKIs suffer from a \textit{weakest link in the chain} problem.
+In other words, while one trusted party is an unreasonable assumption, $n>1$ trusted parties is much worse, since it increases the attack surface.
+Sadly, the PKI used to secure HTTPS connections is the best example of this.
+The \textit{Web PKI} is comprised of $1400$+ \textit{Certificate Authorities} (CAs)~\cite{ssliverse-talk} which digitally sign \textit{certificates} that map a website to its public key.
+Quite terrifyingly, \textit{any} CA, in \textit{any} country, can sign a certificate for \textit{any} website.
+Not surprisingly, this has led to many websites being surreptitiously \textit{impersonated}~\cite{cahacks,cahacksurvey}.
+Even worse, it is conceivable that some impersonation attacks went undetected.
+Fortunately, in 2013, Google took a key step towards \textit{detecting} and thus \textit{deterring} such attacks~\cite{ct}, which we discuss next.
+
+\paragraph{Maintaining Trust in PKIs with Transparency Logs.}
+In 2011, Google was the victim of two impersonation attacks~\cite{mitmgoogle,mitmgoogle2}.
+As a result, in March 2013, Google deployed \textit{Certificate Transparency} (CT)~\cite{ct} as a way of detecting impersonation attacks and, hopefully, deterring them by publicly (though not provably) revealing their traces.
+The key idea behind CT is to \textit{require} that all certificates for websites be published in a \textit{transparency log}.
+In other words, unless a certificate comes with an \textit{inclusion proof} in the transparency log, a browser such as Firefox will never accept that certificate.
+This way, if a rogue CA issues a fake certificate for a victim website, then the victim can detect this attack by searching or \textit{monitoring} in the transparency log.
+This immediately raises the question of who runs this log and what if, just like a CA, it misbehaves?
+The answer is an untrusted \textit{log server} runs the log but, if it misbehaves, it can be caught either (1) by \textit{domain owners}  such as \texttt{google.com},  \texttt{yahoo.com} or \texttt{your-website.com}, or (2) by users like \alice and \bob, or (3) by any other third-party \textit{verifier}.
+Importantly, this misbehavior can be \textit{cryptographically proven}.
+
+It is important to understand that CT logs cannot \textit{prevent} impersonation attacks, since a rogue CA can always (``kamikaze-style'') publish a fake certificate for, say, \texttt{google.com} in the log which will be used by (unsuspecting) users, until the fake certificate is detected and revoked by Google.
+Instead, CT logs make such attacks quickly \textit{detectable} by the impersonated victim.
+Specifically, the victim can now search the log for its certificates (i.e., monitor) and discover the fake certificate.
+Unfortunately, this does not prove the certificate is ``fake.''
+After all, the CA can falsely claim the victim was the one who asked for this certificate to be issued.
+Since there is no cryptographic way of figuring out the truth, this must be resolved in the real world via the judicial system.
+This way, incompetent or malicious CAs can be eliminated from the Web PKI, leading to a more trustworthy ecosystem.
+Furthermore, the threat of legal action should deter CAs from misbehaving.
+Yet this is only possible if logs are honest, which brings us to the focus of \cref{s:aads} of this thesis: \textit{cryptography for transparency logs.}
+
+\paragraph{Transparency Logs with Succinct Proofs.}
+To operate correctly, transparency logs must have three key properties.
+First, when a browser connects to a website and receives a certificate, the log server should prove to the browser that the certificate is included in the log via an \textit{inclusion proof}.
+Otherwise, instead of being forced to publish fake certificates in the log and risk detection, rogue CAs can directly (and thus undetectably) present fake certificates to victim browsers.
+
+Second, when a domain owner \textit{looks up} their own certificates in the log, the server should prove that the domain's complete set of certificates has been returned via a \textit{lookup proof}.
+Otherwise, if a fake certificate can be left out of the answer, then it would never be discovered by victims monitoring the log, leading to undetected impersonation attacks.
+
+Third, logs should prove to everybody that they remain append-only via \textit{append-only proofs}.
+Otherwise, a fake certificate for a victim website can be inserted in the log, shown to a victim browser and removed quickly, before the victim website has a chance to monitor its certificates.
+
+Unfortunately, although all transparency log designs support these proofs, the proof sizes are too large ~\cite{ct,coniks,Ryan2014}: either the lookup proof or the append-only proof is linear in the size of the log.
+As a workaround to obtain small proof sizes, all transparency logs introduce additional trust assumptions or additional actors.
+Specifically, they either introduce additional \textit{verifiers} who check the log for misbehavior on behalf of users~\cite{ct,Ryan2014}, or rely on non-collusion assumptions~\cite{aki,arpki,policert}, or require users to \textit{frequently check the log}~\cite{Ryan2014,dtki,coniks}.
+As a result, such constructions are either difficult to deploy~\cite{aki,arpki,policert}, or expensive in terms of communication overhead~\cite{ct,coniks}, or slow to detect attacks~\cite{Ryan2014,dtki}.
+
+In contrast, logs with succinct proofs do not suffer from these problems.
+First, they require no additional verifiers, making them easier to deploy.
+Second, by definition, they have low communication overhead.
+Third, since proof sizes are small, they can be frequently queried to detect attacks fast.
+Thus, the first question this thesis asks is:
+
+\newcommand{\qoneprefix}{\textbf{\underline{Question 1}:}\xspace}
+\newcommand{\qonesuffix}{Can we build transparency logs with succinct lookup proofs\xspace}
+\newlength{\qonelength}
+\settowidth{\qonelength}{\qoneprefix\qonesuffix}
+\begin{center}
+\parbox{\qonelength}{%
+    \centering
+    \qoneprefix \textit{\qonesuffix and succinct append-only proofs in the single, untrusted sever model?}
+}
+\end{center}
+
+We answer this question positively in \cref{s:aads}.
+We give constructions for logs that map application-specific \textit{keys} to one or more application-specific \textit{values}, in an append-only fashion.
+Such logs are ideal for building public-key directories (i.e., a ``key'' corresponds to a domain and the ``values'' correspond to the certificates of that domain).
+We also give constructions for logs that maintain an append-only set of application-specific \textit{elements}.
+Such logs are ideal for keeping track of revoked certificates~\cite{Laurie15}.
+Our transparency logs are useful not just for securing PKIs, but also for securing software distribution~\cite{at,contour,chainiac,software-dist-transparency,TD17,STV+16}.
+Although our constructions offer small proof sizes, they are not yet fast enough to append to, at least not at the scale of a realistic PKI.
+We believe this can be addressed by future work and we discuss possible directions in \cref{s:future-work:aads}.
+
+\section{How to Share a Secret (With Two Million People)}
+Many cryptographic schemes require that some information be kept secret from the adversary.
+For example, in public-key encryption schemes~\cite{rsa,DH76}, \alice and \bob have to keep their \textit{private keys} secret, or else the adversary can snoop on their conversation.
+Similarly, in cryptocurrencies like Bitcoin~\cite{bitcoin}, users have to keep their private keys secret, or else the adversary can steal their coins.
+Yet this requirement of keeping a private key secret from the adversary is in constant tension with the need to use it (and thus temporarily expose it) for achieving cryptographic goals: e.g., sending an encrypted message, or transferring coins.
+Fortunately, one way to address this tension is via \textit{threshold cryptosystems}.
+
+In a threshold cryptosystem, the private key is \textit{split up} amongst a set of $n$ players, such that \textit{only} subsets of size $\ge t$ players can collaborate to use the key.
+Threshold cryptosystems better hide the key from the adversary, who now has to compromise at least $t$ players.
+At the same time, they preserve functionality by allowing the players to collaborate to use the key.
+Importantly, players can use the key \textit{without ever exposing it}~\cite{Desmedt87,DF90,DesmedtFrankel1992SharedGeneration}.
+
+\paragraph{Threshold Signatures.}
+For example, a digital signature scheme such as RSA~\cite{rsa} or BLS~\cite{BLS04} can be transformed into a \textit{threshold signature scheme} (TSS) by splitting up its private key amongst $n$ \textit{signers}.
+This way, each signer has a \textit{share} of the private key and only subsets of $\ge t$ signers can collaborate to produce a signature.
+Importantly, the signers can do this \textit{without} reconstructing the private key ``in plain sight'' and thus exposing it.
+
+In a TSS, signing a message $m$ is an interactive protocol.
+Each signer is given $m$ and computes a \textit{signature share}, which is just a signature on $m$ but under that signer's share of the private key.
+Then, any $\ge t$ signers get together and ``aggregate'' their signature shares into the \textit{final signature} on $m$.
+As a result, the private key is never exposed but can still be used to sign!
+
+TSS schemes have many important applications.
+First, they can be used to decentralize Certificate Authorities (CAs) in PKIs (see \cref{s:intro:part1}) by distributing their extremely-sensitive private key amongst many sub-CAs~\cite{STV+16}.
+Second, they can be used to create very simple but resilient \textit{randomness beacons}~\cite{randherd,CD17a,ouroboros}, which have many applications in cryptography~\cite{zcash-mpc2}.
+Third, they can be used to create simple voting protocols and thus to scale consensus protocols~\cite{GAG+19}.
+
+While applications such as decentralizing Certificate Authorities (CA) do not require a high number of signers, other applications such as voting could require millions of signers.
+Unfortunately, naively-implemented TSS schemes do not scale to such a large number of signers.
+This is because all current TSS scheme implementations use a naive polynomial interpolation algorithm~\cite{BT04}, which runs in time quadratic in the number of signers $n$.
+Thus, the second question this thesis asks is:
+
+\newcommand{\qtwoprefix}{\textbf{\underline{Question 2}:}\xspace}
+\newcommand{\qtwosuffix}{Can we scale threshold signature schemes to millions of signers?}
+\newlength{\qtwolength}
+\settowidth{\qtwolength}{\qtwoprefix\qtwosuffix}
+\begin{center}
+\parbox{\qtwolength}{%
+    \centering
+    \qtwoprefix \textit{\qtwosuffix}
+}
+\end{center}
+
+We answer this question positively in \cref{s:threshsig:fast-lagr}.
+We adapt existing, quasilinear-time interpolation algorithms~\cite{vG13ModernCh10} to work with discrete log-based signature schemes such as BLS~\cite{BLS04}.
+This gives us a dramatic speed-up over naive, quadratic-time interpolation algorithms.
+Specifically, our threshold BLS signature~\cite{Boldyreva03} can aggregate a signature from one million signers in \blsEffTimeFriendly{2097151}, a drastic improvement over \blsNaiveTimeFriendly{2097151}, if done using a naive, quadratic-time interpolation algorithm.
+
+\paragraph{Bootstrapping Threshold Signatures.}
+Yet a key challenge still remains: even if TSS schemes scaled to millions of signers, how can such a large-scale TSS be securely bootstrapped?
+In other words, how will the private key be split up amongst the $n$ signers so that nobody learns it but everybody has a share of it?
+If a single \textit{trusted dealer} were to generate the private key and split it amongst the signers using \textit{secret sharing}~\cite{Shamir79,CGMA85}, then he would be trusted to forget the private key.
+This dealer would thus become a single point of failure, which defeats the point of a threshold cryptosystem.
+
+Fortunately, \textit{distributed key generation} (DKG) protocols~\cite{Ingemarsson1991,Pedersen1991AThreshold,GJKR07,Kate2010} can remove this single point of failure when bootstrapping a TSS.
+In a DKG, the $n$ signers jointly and randomly pick the private key and split it amongst each other, without any signers learning the final private key.
+In other words, the $n$ signers can be used to ``implement'' an always-honest dealer.
+Unfortunately, DKG protocols can be computationally-expensive, requiring computation quadratic in the number of signers $n$~\cite{Kate2010}.
+Thus, the second question this thesis asks is:
+
+\newcommand{\qthreeprefix}{\textbf{\underline{Question 3}:}\xspace}
+\newcommand{\qthreesuffix}{Can we scale distributed key generation (DKG) protocols\xspace}
+\newlength{\qthreelength}
+\settowidth{\qthreelength}{\qthreeprefix\qthreesuffix}
+\begin{center}
+\parbox{\qthreelength}{%
+    \centering
+    \qthreeprefix \textit{\qthreesuffix for discrete log-based cryptosystems to millions of players?}
+}
+\end{center}
+
+We answer this question positively in \cref{s:threshcrypto}.
+First, we present a novel DKG protocol, which can generate keys for TSS schemes with millions of players in hours, rather than a year (see \cref{s:eval:dkg}).
+In this process, we also introduce a scalable Verifiable Secret Sharing (VSS) protocol~\cite{Shamir79,CGMA85,Feldman87} and a novel Vector Commitment (VC) scheme (see \cref{s:vcs:from-amt}).
+While VSS is a key component of DKG protocols, VCs are of independent interest and have applications to stateless cryptocurrencies~\cite{CPZ18,BBF19}.
+Second, we present a threshold-variant of BLS signatures~\cite{BLS04,Boldyreva03} that can aggregate a signature from one million signers in \blsEffTime{2097151}, a drastic improvement over \blsNaiveTime{2097151}, if done naively.
+
+\section{Organization}
+\label{s:intro:related-work}
+This thesis is organized into two parts.
+The necessary, common background is in \cref{s:prelim}.
+
+\paragraph{\cref{s:aads}.}
+This part covers our append-only authenticated data structures for transparency logs~\cite{ct,Ryan2014} with application to public-key distribution.
+In \cref{s:aads:intro}, we introduce transparency logs, motivate the need to build communication-efficient logs without trusted third parties and discuss related work.
+In \cref{s:prelim:aads}, we give additional background on \textit{cryptographic accumulators}~\cite{acc-rsa,Nguyen05}, which our data structures are built upon.
+
+In \cref{s:aas}, we introduce \textit{append-only authenticated sets (AAS)}, which can be used to build \textit{revocation transparency (RT)} logs~\cite{Laurie15}.
+First, in \cref{s:aas:defs} we formalize AAS correctness and security definitions.
+Second, in \cref{s:aas:from-bilinear-acc}, we construct an AAS from \textit{bilinear accumulators}~\cite{Nguyen05}.
+Third,  in \cref{s:aas:from-rsa-acc} we construct an AAS from \textit{RSA accumulators}~\cite{acc-rsa}.
+Finally, we prove these two constructions are secure in \cref{s:aas:from-bilinear-acc:proofs} and \cref{s:aas:from-rsa-acc:proofs}, respectively.
+
+In \cref{s:aad}, we introduce \textit{append-only authenticated dictionaries (AADs)}, which can be used to build general-purpose transparency logs~\cite{ELC16,trillian}.
+First, in \cref{s:aad:defs}, we formalize AAD correctness and security definitions.
+Second, in \cref{s:aad:from-acc}, we show how to build an AAD from any cryptographic accumulator by slightly modifying our AAS constructions from \cref{s:aas}.
+Third, in \cref{s:aad:from-bilinear-acc:eval}, we implement and evaluate our bilinear-based AAD construction.
+
+\paragraph{\cref{s:threshcrypto}.}
+This part covers our scalable threshold cryptosystems: threshold signature schemes (TSS), verifiable secret sharing (VSS) protocols and distributed key generation (DKG) protocols.
+In \cref{s:threshcrypto:intro}, we introduce threshold cryptosystems, motivate their need to scale and discuss related work.
+In \cref{s:prelim:threshcrypto}, we give additional background on TSS, VSS and DKG protocols.
+
+In \cref{s:amt}, we introduce \textit{authenticated multipoint evaluation trees (AMTs)}, a new way of precomputing evaluation proofs in polynomial commitments~\cite{KZG10a}.
+AMTs will be the key ingredient for scaling VSS and DKG protocols later on.
+In \cref{s:vcs:from-amt}, we give a new \textit{vector commitment (VC)} scheme based on AMTs.
+
+In \cref{s:threshcrypto:scalable-systems}, we give scalable constructions for TSS, VSS and DKG protocols.
+First, in \cref{s:threshsig}, we show how a faster algorithm for polynomial interpolation can be used to scale threshold signatures to millions of signers.
+%(and any threshold cryptosystems based on Shamir secret sharing~\cite{Shamir79}).
+Second, in \cref{s:scalable-vss}, we use AMTs to scale VSS protocols to millions of players.
+Third, in \cref{s:scalable-dkg}, we use our scalable VSS to scale DKG protocols.
+Finally, in \cref{s:threshcrypto:eval}, we implement and evaluate our scalable TSS, VSS and DKG protocols.
+
+\paragraph{Future Work and Conclusion.}
+In \cref{s:future-work:aads}, we give directions for future work on AADs, discussing both how to improve our current constructions and how to develop new ones.
+In \cref{s:future-work:threshcrypto}, we give directions for future work on threshold cryptosystems, with an emphasis on reducing communication in VSS and DKG protocols.
+We conclude in \cref{s:conclusion}.
+
+\section{Publications}
+The results of this thesis are also published in two conference papers~\cite{TBP+19,TCZ+20}:
+
+\begin{center}
+\textit{``Transparency Logs via Append-only Authenticated Dictionaries''},
+Alin Tomescu, Vivek Bhupatiraju, Dimitrios Papadopoulos, Charalampos Papamanthou, Nikos Triandopoulos and Srinivas Devadas, in ACM CCS 2019
+\end{center}
+
+\begin{center}
+\textit{``Towards Scalable Threshold Cryptosystems''}, Alin Tomescu, Robert Chen, Yiming Zheng, Ittai Abraham, Benny Pinkas, Guy Golan Gueta and Srinivas Devadas, in IEEE S\&P 2020
+\end{center}

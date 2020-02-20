@@ -1,0 +1,94 @@
+\newcommand{\ejfdkgAlgorithm}{
+%\begin{multicols}{2}
+%\begin{algorithm*} % two column algorithm
+\setlist[enumerate]{leftmargin=15pt, itemsep=.3pt}
+\setlist[itemize]{leftmargin=*, itemsep=.3pt}
+\begin{algorithm}[t] % single column algorithm
+    \caption{\small \ejfdkg's {Sharing Phase}}
+    \label{alg:dkg}
+    \footnotesize
+        
+        \vspace{.2em}
+        \underline{Dealing round:}
+        Each player $i$:
+        \begin{enumerate}
+            \item Picks $f_i \in_R \Fp[X]$ of degree $t-1$, sets $z_i = f_i(0)$ and $c_i = g^{f_i(\tau)}$.
+            % Note: A NIZKPoK of $z_i$ w.r.t. to $g^{z_i}$ is necessary for securely verifying the KZG proof against $g^{z_i}$.
+            \item Computes $g^{z_i} = g^{f_i(0)}$, a KZG proof $\pi_{i,0}$ for $f_i(0)$ and a NIZKPoK $\nizkpok_i$ for $g^{f_i(0)}$
+                  and \textit{broadcasts} $(c_i, g^{z_i}, \pi_{i,0}, \nizkpok_i)$.
+            % NOTE: Sending $g^{z_i}$ could be deferred to later, and that would avoid the biasability of the final secret $s$ at the cost of an extra broadcast round. But PolyCommit_Ped must be used to hide g^{f_i(0)}.
+            \item Computes shares $s_{i,j} = f_i(j)$ and KZG proofs $\pi_{i,j}$ and
+                  sends $(s_{i,j}, \pi_{i,j})$ to each $j\in[n]$ over an \textit{authenticated, private} channel.
+        \end{enumerate}
+
+        \underline{Verification round:}
+        For each $(c_i, g^{z_i}, \pi_{i,0}, \nizkpok_i, s_{i,j}, \pi_{i,j})$ from $i$, each $j$:
+        \begin{enumerate}
+            \item Verifies $\pi_{i,0}$ by checking $e(c_i/g^{z_i},g) = e(\pi_{i,0}, g^{\tau-0})$ and verifies the $\nizkpok_i$ NIZKPoK.
+            % Note: The fact that g^{z_i} partially leaks the MSB of z_i is problematic here, because now the the adversary can disqualify a P_i that he controls if that favors a certain MSB in the final \sum_i g^{z_i}. He can disqualify P_i by having another controlled player P_j complain about P_i and then having P_i intentionally broadcast a bad share.
+            \item Verifies its share $s_{i,j}$ using $e(c_i/g^{s_{i,j}},g) = e(\pi_{i,j}, g^{\tau-j})$.
+            % Note: If the f_i(0) check fails for player j, it fails for all players => all honest players complain => player i is automatically disqualified
+            \item If any of these checks fail (or nothing was received from $i$), then $j$ broadcasts a complaint against $i$.
+        \end{enumerate}
+
+%        \underline{Complaint round (w/ KZG batch proofs):}
+%        \begin{enumerate}
+%            \item Let $S_i$ be the set of players complaining against $i$. If $|S_i| \ge t$, then $i$ is marked as \textit{disqualified} by all players.
+%                  Otherwise, if $|S_i| > 0$, then $i$ computes a \textit{KZG batch proof} $\kzgbatchproof_i$ for all $\{s_{i,j}\}_{j\in S_i}$ and broadcasts $(S_i, \{s_{i,j}\}_{j\in S_i}, \kzgbatchproof_i)$.
+%            \item If the batch proof $\kzgbatchproof_i$ does not verify, then $i$ is disqualified.
+%                  Otherwise, each $j\in S_i$ now has his correct share $s_{i,j}$.
+%            \item Let $Q$ denote the set of players that were \textit{not} disqualified.
+%                  The agreed-upon (unknown) secret key $s=\sum_{j \in Q} z_j$.
+%                  Each $i$
+%                sets $c = \prod_{j\in Q} c_j$,
+%                sets the \textit{public key} $g^s = \prod_{j\in Q} g^{z_j}$,
+%                sets his share $s_i = \sum_{j\in Q} s_{j,i}$,
+%                and sets his KZG proof $\pi_i = \prod_{j\in Q} \pi_{j,i}$.
+%%            \begin{itemize}
+%%                \item $P_i$ computes his \textit{verification key} (VK) $g^{s_i}$ and tweaks the proof $\pi_i$ to vouch for his $g^{s_i}$ rather than $s_i$.
+%%                This allows $P_i$ to verifiably announce its VK to all other $P_j$'s
+%%            \end{itemize}
+%        \end{enumerate}
+
+        \underline{Complaint round:}
+        \begin{enumerate}
+            \item Let $S_i$ be the set of players complaining against $i$. If $|S_i| \ge t$, then $i$ is marked as \textit{disqualified} by all honest players.
+                  Otherwise, $i$ broadcasts $\{s_{i,j},\pi_{i,j}\}_{j\in S_i}$.
+            % In some sense, the round has finished after the broadcast, and the verification work done below
+            % should be considered as part of a new round. But since this verification is not followed by another broadcast, it is not considered as a new round.
+            \item If any one proof does not verify (or $i$ did not broadcast), then $i$ is disqualified.
+                  Otherwise, each $j\in S_i$ now has his correct share $s_{i,j}$.
+            \item Let $Q$ denote the set of players that were \textit{not} disqualified.
+                  The agreed-upon (unknown) secret key $s=\sum_{j \in Q} z_j$.
+                  Each $i$
+                sets $c = \prod_{j\in Q} c_j$,
+                sets the \textit{public key} $g^s = \prod_{j\in Q} g^{z_j}$,
+                sets his share $s_i = \sum_{j\in Q} s_{j,i}$,
+                and sets his KZG proof $\pi_i = \prod_{j\in Q} \pi_{j,i}$.
+        \end{enumerate}
+
+    %\textit{Postconditions:}
+    %All honest participants agree on the public key $g^s$ and have a share $s_i$ of $s$ such that any subgroup of size $t$ participants can reconstruct $s$.
+%\end{algorithm*}
+\end{algorithm}
+}
+
+TSS protocols pose a key generation problem: if one party $P$ splits $s$ to the $n$ signers (via SSS), $P$ would know $s$ and could sign on behalf of the group.
+This would make the TSS insecure and thus motivates \textit{distributed key generation} (DKG) protocols~\cite{GJKR07,Pedersen1991AThreshold}.
+A $(t,n)$ DKG protocol for discrete log cryptosystems allows $n$ players to jointly generate a secret key $s\in_R \Fp$ with public key $g^s\in \Group$ such that \textit{only} subsets of size $\ge t$ can reconstruct $s$.
+
+Unlike VSS protocols, where the dealer knows $s$ (see \cref{s:prelim:vss}), DKG protocols guarantee nobody learns $s$ during the execution of the protocol.
+Typically, DKG protocols achieve this by having each player $i$ secret-share its own secret $z_i$ and setting the \textit{final secret} $s$ to be $\sum_i z_i$.
+Similar to VSS, DKG protocols must offer two security properties against any adversary who compromises $<t$ players: \textit{secrecy} and \textit{correctness}.
+Informally, secrecy guarantees that no adversary can learn any information about $s$ beyond what is leaked by $g^s$.
+Correctness guarantees that all honest players agree on $g^s$ and any subset with $\ge t$ honest players can reconstruct $s$.
+
+\ejfdkgAlgorithm
+
+\subsection{Kate's \ejfdkg}
+\label{s:prelim:dkg:ejfdkg}
+In this thesis, we focus on improving \ejfdkg which, at a high-level, consists of $n$ parallel executions of \evss.
+We describe only its sharing phase in \cref{alg:dkg}, since it has the same reconstruction phase as \evss.
+Note that \ejfdkg makes use of \textit{non-interactive zero-knowledge proofs of knowledge (NIZKPoKs)}~\cite{CS97}.
+Although \ejfdkg is \textit{biasable} and produces an $s$ that is not guaranteed to be uniform, computing discrete logs on $g^s$ is still hard~\cite{Kate2010,GJKR03}.
+Also, debiasing DKG protocols is possible~\cite{GJKR07,NBB16,SJSW19}.

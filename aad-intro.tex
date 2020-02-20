@@ -1,0 +1,13 @@
+In this section, we generalize the notion of an append-only authenticated set from \cref{s:aas} to an \textit{append-only authenticated dictionary} (AAD).
+Recall that an AAS stores \textit{elements} and supports (non)membership queries of the form ``Is $e\in S$?''
+In contrast, an AAD stores \textit{key-value pairs} and supports \textit{lookups} of the form ``Is $V$ the complete set of values for key $k$?''
+In other words, an AAD maps a \textit{key} $k$ to a multiset of \textit{values} $V$ in an append-only fashion.
+Specifically, once a value has been added to a key, it cannot be removed nor changed.
+For example, if a key is a domain name and its values are certificates for that domain, then an AAD can be used as a Certificate Transparency (CT) log.
+In general, keys and values can have any application-specific type.
+
+Naturally, we need new security notions that capture the additional functionality of dictionaries over sets.
+Specifically, in an AAS, no malicious server can simultaneously produce accepting proofs of membership and non-membership for the same element $e$ with respect to the same digest.
+In contrast, in an AAD, no malicious server can simultaneously produce accepting proofs for two different sets of values $V,V'$ for a key $k$ with respect to the same digest.
+This captures the related notion for an AAS since one of the sets of values may be empty (indicating $k$ has never been registered in the dictionary) and the other non-empty.
+Similarly, the security definitions for the ``append-only'' property can also be adjusted.

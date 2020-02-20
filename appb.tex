@@ -1,0 +1,109 @@
+\section{Threshold Cryptosystems Performance Numbers}
+
+\input{table-evss-vs-amtvss}
+
+\begin{table}[t]
+    %\large
+    %\small
+    %\footnotesize
+    \scriptsize
+    \centering
+    %\vspace{1em}
+    %\vspace{2.2em}
+    \begin{tabular}{ccccccc}
+        %\toprule
+        {\makecell{Total \# of\\players}}
+        & \makecell{Dealing\\round time}
+        & \makecell{Verification\\ round time\\(best case / worst case)}
+        & \makecell{Reconstruction\\phase time\\(best case / worst-case)}
+        %& \makecell{$n$ shares\\ verify time}
+        & \makecell{End-to-end\\time\\(best case / worst-case)}\\
+        \toprule
+        
+        $n=3$ & \ejfDkgDealTime{3} & \ejfDkgVerifyBcTime{3} / \ejfDkgVerifyWcTime{3} & \ejfDkgReconstrBcTime{3} / \ejfDkgReconstrWcTime{3} & \ejfDkgEndToEndBcTime{3} / \ejfDkgEndToEndWcTime{3}\\
+        $n=3$ & \amtDkgDealTime{3} & \amtDkgVerifyBcTime{3} / \amtDkgVerifyWcTime{3} & \amtDkgReconstrBcTime{3} / \amtDkgReconstrWcTime{3} & \amtDkgEndToEndBcTime{3} / \amtDkgEndToEndWcTime{3}\\
+        \addlinespace[0.4em]
+        
+        $n=7$ & \ejfDkgDealTime{7} & \ejfDkgVerifyBcTime{7} / \ejfDkgVerifyWcTime{7} & \ejfDkgReconstrBcTime{7} / \ejfDkgReconstrWcTime{7} & \ejfDkgEndToEndBcTime{7} / \ejfDkgEndToEndWcTime{7}\\
+        $n=7$ & \amtDkgDealTime{7} & \amtDkgVerifyBcTime{7} / \amtDkgVerifyWcTime{7} & \amtDkgReconstrBcTime{7} / \amtDkgReconstrWcTime{7} & \amtDkgEndToEndBcTime{7} / \amtDkgEndToEndWcTime{7}\\
+        \addlinespace[0.4em]
+        
+        $n=15$ & \ejfDkgDealTime{15} & \ejfDkgVerifyBcTime{15} / \ejfDkgVerifyWcTime{15} & \ejfDkgReconstrBcTime{15} / \ejfDkgReconstrWcTime{15} & \ejfDkgEndToEndBcTime{15} / \ejfDkgEndToEndWcTime{15}\\
+        $n=15$ & \amtDkgDealTime{15} & \amtDkgVerifyBcTime{15} / \amtDkgVerifyWcTime{15} & \amtDkgReconstrBcTime{15} / \amtDkgReconstrWcTime{15} & \amtDkgEndToEndBcTime{15} / \amtDkgEndToEndWcTime{15}\\
+        \addlinespace[0.4em]
+        
+        $n=31$ & \ejfDkgDealTime{31} & \ejfDkgVerifyBcTime{31} / \ejfDkgVerifyWcTime{31} & \ejfDkgReconstrBcTime{31} / \ejfDkgReconstrWcTime{31} & \ejfDkgEndToEndBcTime{31} / \ejfDkgEndToEndWcTime{31}\\
+        $n=31$ & \amtDkgDealTime{31} & \amtDkgVerifyBcTime{31} / \amtDkgVerifyWcTime{31} & \amtDkgReconstrBcTime{31} / \amtDkgReconstrWcTime{31} & \amtDkgEndToEndBcTime{31} / \amtDkgEndToEndWcTime{31}\\
+        \addlinespace[0.4em]
+        
+        $n=63$ & \ejfDkgDealTime{63} & \ejfDkgVerifyBcTime{63} / \ejfDkgVerifyWcTime{63} & \ejfDkgReconstrBcTime{63} / \ejfDkgReconstrWcTime{63} & \ejfDkgEndToEndBcTime{63} / \ejfDkgEndToEndWcTime{63}\\
+        $n=63$ & \amtDkgDealTime{63} & \amtDkgVerifyBcTime{63} / \amtDkgVerifyWcTime{63} & \amtDkgReconstrBcTime{63} / \amtDkgReconstrWcTime{63} & \amtDkgEndToEndBcTime{63} / \amtDkgEndToEndWcTime{63}\\
+        \addlinespace[0.4em]
+        
+        $n=127$ & \ejfDkgDealTime{127} & \ejfDkgVerifyBcTime{127} / \ejfDkgVerifyWcTime{127} & \ejfDkgReconstrBcTime{127} / \ejfDkgReconstrWcTime{127} & \ejfDkgEndToEndBcTime{127} / \ejfDkgEndToEndWcTime{127}\\
+        $n=127$ & \amtDkgDealTime{127} & \amtDkgVerifyBcTime{127} / \amtDkgVerifyWcTime{127} & \amtDkgReconstrBcTime{127} / \amtDkgReconstrWcTime{127} & \amtDkgEndToEndBcTime{127} / \amtDkgEndToEndWcTime{127}\\
+        \addlinespace[0.4em]
+        
+        $n=255$ & \ejfDkgDealTime{255} & \ejfDkgVerifyBcTime{255} / \ejfDkgVerifyWcTime{255} & \ejfDkgReconstrBcTime{255} / \ejfDkgReconstrWcTime{255} & \ejfDkgEndToEndBcTime{255} / \ejfDkgEndToEndWcTime{255}\\
+        $n=255$ & \amtDkgDealTime{255} & \amtDkgVerifyBcTime{255} / \amtDkgVerifyWcTime{255} & \amtDkgReconstrBcTime{255} / \amtDkgReconstrWcTime{255} & \amtDkgEndToEndBcTime{255} / \amtDkgEndToEndWcTime{255}\\
+        \addlinespace[0.4em]
+        
+        $n=511$ & \ejfDkgDealTime{511} & \ejfDkgVerifyBcTime{511} / \ejfDkgVerifyWcTime{511} & \ejfDkgReconstrBcTime{511} / \ejfDkgReconstrWcTime{511} & \ejfDkgEndToEndBcTime{511} / \ejfDkgEndToEndWcTime{511}\\
+        $n=511$ & \amtDkgDealTime{511} & \amtDkgVerifyBcTime{511} / \amtDkgVerifyWcTime{511} & \amtDkgReconstrBcTime{511} / \amtDkgReconstrWcTime{511} & \amtDkgEndToEndBcTime{511} / \amtDkgEndToEndWcTime{511}\\
+        \addlinespace[0.4em]
+        
+        $n=1023$ & \ejfDkgDealTime{1023} & \ejfDkgVerifyBcTime{1023} / \ejfDkgVerifyWcTime{1023} & \ejfDkgReconstrBcTime{1023} / \ejfDkgReconstrWcTime{1023} & \ejfDkgEndToEndBcTime{1023} / \ejfDkgEndToEndWcTime{1023}\\
+        $n=1023$ & \amtDkgDealTime{1023} & \amtDkgVerifyBcTime{1023} / \amtDkgVerifyWcTime{1023} & \amtDkgReconstrBcTime{1023} / \amtDkgReconstrWcTime{1023} & \amtDkgEndToEndBcTime{1023} / \amtDkgEndToEndWcTime{1023}\\
+        \addlinespace[0.4em]
+        
+        $n=2047$ & \ejfDkgDealTime{2047} & \ejfDkgVerifyBcTime{2047} / \ejfDkgVerifyWcTime{2047} & \ejfDkgReconstrBcTime{2047} / \ejfDkgReconstrWcTime{2047} & \ejfDkgEndToEndBcTime{2047} / \ejfDkgEndToEndWcTime{2047}\\
+        $n=2047$ & \amtDkgDealTime{2047} & \amtDkgVerifyBcTime{2047} / \amtDkgVerifyWcTime{2047} & \amtDkgReconstrBcTime{2047} / \amtDkgReconstrWcTime{2047} & \amtDkgEndToEndBcTime{2047} / \amtDkgEndToEndWcTime{2047}\\
+        \addlinespace[0.4em]
+        
+        $n=4095$ & \ejfDkgDealTime{4095} & \ejfDkgVerifyBcTime{4095} / \ejfDkgVerifyWcTime{4095} & \ejfDkgReconstrBcTime{4095} / \ejfDkgReconstrWcTime{4095} & \ejfDkgEndToEndBcTime{4095} / \ejfDkgEndToEndWcTime{4095}\\
+        $n=4095$ & \amtDkgDealTime{4095} & \amtDkgVerifyBcTime{4095} / \amtDkgVerifyWcTime{4095} & \amtDkgReconstrBcTime{4095} / \amtDkgReconstrWcTime{4095} & \amtDkgEndToEndBcTime{4095} / \amtDkgEndToEndWcTime{4095}\\
+        \addlinespace[0.4em]
+        
+        $n=8191$ & \ejfDkgDealTime{8191} & \ejfDkgVerifyBcTime{8191} / \ejfDkgVerifyWcTime{8191} & \ejfDkgReconstrBcTime{8191} / \ejfDkgReconstrWcTime{8191} & \ejfDkgEndToEndBcTime{8191} / \ejfDkgEndToEndWcTime{8191}\\
+        $n=8191$ & \amtDkgDealTime{8191} & \amtDkgVerifyBcTime{8191} / \amtDkgVerifyWcTime{8191} & \amtDkgReconstrBcTime{8191} / \amtDkgReconstrWcTime{8191} & \amtDkgEndToEndBcTime{8191} / \amtDkgEndToEndWcTime{8191}\\
+        \addlinespace[0.4em]
+        
+        $n=16383$ & \ejfDkgDealTime{16383} & \ejfDkgVerifyBcTime{16383} / \ejfDkgVerifyWcTime{16383} & \ejfDkgReconstrBcTime{16383} / \ejfDkgReconstrWcTime{16383} & \ejfDkgEndToEndBcTime{16383} / \ejfDkgEndToEndWcTime{16383}\\
+        $n=16383$ & \amtDkgDealTime{16383} & \amtDkgVerifyBcTime{16383} / \amtDkgVerifyWcTime{16383} & \amtDkgReconstrBcTime{16383} / \amtDkgReconstrWcTime{16383} & \amtDkgEndToEndBcTime{16383} / \amtDkgEndToEndWcTime{16383}\\
+        \addlinespace[0.4em]
+        
+        $n=32767$ & \ejfDkgDealTime{32767} & \ejfDkgVerifyBcTime{32767} / \ejfDkgVerifyWcTime{32767} & \ejfDkgReconstrBcTime{32767} / \ejfDkgReconstrWcTime{32767} & \ejfDkgEndToEndBcTime{32767} / \ejfDkgEndToEndWcTime{32767}\\
+        $n=32767$ & \amtDkgDealTime{32767} & \amtDkgVerifyBcTime{32767} / \amtDkgVerifyWcTime{32767} & \amtDkgReconstrBcTime{32767} / \amtDkgReconstrWcTime{32767} & \amtDkgEndToEndBcTime{32767} / \amtDkgEndToEndWcTime{32767}\\
+        \addlinespace[0.4em]
+        
+        $n=65535$ & \ejfDkgDealTime{65535} & \ejfDkgVerifyBcTime{65535} / \ejfDkgVerifyWcTime{65535} & \ejfDkgReconstrBcTime{65535} / \ejfDkgReconstrWcTime{65535} & \ejfDkgEndToEndBcTime{65535} / \ejfDkgEndToEndWcTime{65535}\\
+        $n=65535$ & \amtDkgDealTime{65535} & \amtDkgVerifyBcTime{65535} / \amtDkgVerifyWcTime{65535} & \amtDkgReconstrBcTime{65535} / \amtDkgReconstrWcTime{65535} & \amtDkgEndToEndBcTime{65535} / \amtDkgEndToEndWcTime{65535}\\
+        \addlinespace[0.4em]
+        
+        $n=131071$ & \ejfDkgDealTime{131071} & \ejfDkgVerifyBcTime{131071} / \ejfDkgVerifyWcTime{131071} & \ejfDkgReconstrBcTime{131071} / \ejfDkgReconstrWcTime{131071} & \ejfDkgEndToEndBcTime{131071} / \ejfDkgEndToEndWcTime{131071}\\
+        $n=131071$ & \amtDkgDealTime{131071} & \amtDkgVerifyBcTime{131071} / \amtDkgVerifyWcTime{131071} & \amtDkgReconstrBcTime{131071} / \amtDkgReconstrWcTime{131071} & \amtDkgEndToEndBcTime{131071} / \amtDkgEndToEndWcTime{131071}\\
+        \addlinespace[0.4em]
+        
+        $n=262143$ & \ejfDkgDealTime{262143} & \ejfDkgVerifyBcTime{262143} / \ejfDkgVerifyWcTime{262143} & \ejfDkgReconstrBcTime{262143} / \ejfDkgReconstrWcTime{262143} & \ejfDkgEndToEndBcTime{262143} / \ejfDkgEndToEndWcTime{262143}\\
+        $n=262143$ & \amtDkgDealTime{262143} & \amtDkgVerifyBcTime{262143} / \amtDkgVerifyWcTime{262143} & \amtDkgReconstrBcTime{262143} / \amtDkgReconstrWcTime{262143} & \amtDkgEndToEndBcTime{262143} / \amtDkgEndToEndWcTime{262143}\\
+        \addlinespace[0.4em]
+        
+        $n=524287$ & \ejfDkgDealTime{524287} & \ejfDkgVerifyBcTime{524287} / \ejfDkgVerifyWcTime{524287} & \ejfDkgReconstrBcTime{524287} / \ejfDkgReconstrWcTime{524287} & \ejfDkgEndToEndBcTime{524287} / \ejfDkgEndToEndWcTime{524287}\\
+        $n=524287$ & \amtDkgDealTime{524287} & \amtDkgVerifyBcTime{524287} / \amtDkgVerifyWcTime{524287} & \amtDkgReconstrBcTime{524287} / \amtDkgReconstrWcTime{524287} & \amtDkgEndToEndBcTime{524287} / \amtDkgEndToEndWcTime{524287}\\
+        \addlinespace[0.4em]
+        
+        $n=1048575$ & \ejfDkgDealTime{1048575} & \ejfDkgVerifyBcTime{1048575} / \ejfDkgVerifyWcTime{1048575} & \ejfDkgReconstrBcTime{1048575} / \ejfDkgReconstrWcTime{1048575} & \ejfDkgEndToEndBcTime{1048575} / \ejfDkgEndToEndWcTime{1048575}\\
+        $n=1048575$ & \amtDkgDealTime{1048575} & \amtDkgVerifyBcTime{1048575} / \amtDkgVerifyWcTime{1048575} & \amtDkgReconstrBcTime{1048575} / \amtDkgReconstrWcTime{1048575} & \amtDkgEndToEndBcTime{1048575} / \amtDkgEndToEndWcTime{1048575}\\
+        \addlinespace[0.4em]
+        
+        $n=2097151$ & \ejfDkgDealTime{2097151} & \ejfDkgVerifyBcTime{2097151} / \ejfDkgVerifyWcTime{2097151} & \ejfDkgReconstrBcTime{2097151} / \ejfDkgReconstrWcTime{2097151} & \ejfDkgEndToEndBcTime{2097151} / \ejfDkgEndToEndWcTime{2097151}\\
+        $n=2097151$ & \amtDkgDealTime{2097151} & \amtDkgVerifyBcTime{2097151} / \amtDkgVerifyWcTime{2097151} & \amtDkgReconstrBcTime{2097151} / \amtDkgReconstrWcTime{2097151} & \amtDkgEndToEndBcTime{2097151} / \amtDkgEndToEndWcTime{2097151}\\
+        \addlinespace[0.4em]
+        
+    \end{tabular}
+    \caption{
+        Detailed performance numbers from \cref{s:eval:dkg} for \ejfdkg vs. \ourdkg.
+    }
+    \label{t:dkg-perf} % must go after \caption{} for \cref{} to work
+    %\toprule
+\end{table}

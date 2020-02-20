@@ -1,0 +1,20 @@
+\subsection{Synchronous Communication}
+DKG and VSS protocols assume a \textit{broadcast channel} for all actors to reliably communicate with each other~\cite{CGMA85,Pedersen1991AThreshold}.
+(In practice, this can be implemented using BFT protocols~\cite{SJSW19}.)
+In addition, some protocols need \textit{private and authenticated channels} between actors~\cite{Feldman87,Pedersen1991AThreshold,KZG10a,GJKR07,Kate2010}.
+We focus on \textit{synchronous} VSS and DKG protocols, where parties communicate in \textit{rounds}.
+Within a round, each party performs some computation, (possibly) sends private messages to other players and broadcasts a message to everybody.
+By the end of the round, each party receives all messages sent in that round by other players (whether privately or via broadcast).
+
+\subsection{Static, Rushing, Threshold Adversaries}
+We assume computationally-bounded adversaries \Adv that control up to $t-1$ players.
+We restrict ourselves to \textit{static} \Adv's who fix the set of $<t$ corrupted players before the protocol starts.
+% Note: FGG+06 is one VSS paper that talks about rushing adversaries.
+We assume \Adv can be \textit{rushing} and can wait to hear all messages from all honest players in a round before privately sending or broadcasting his own message within that same round.
+% Note: Why you do NOT need an honest majority to disqualify dishonest players in a DKG protocol:
+%  - if t   players say player i is bad, then one of the players must have been honest, so we can safely disqualify player i.
+%  - if t-1 players say player i is bad, then they could all be malicious, so you can't disqualify i
+The protocols in this thesis are \textit{robust}: there are always $t$ honest players who can reconstruct the secret.
+In the synchronous setting, robustness holds for all $t - 1 < n/2$~\cite{GJKR07}.
+%To see this, note the minimum number of honest players is $h = n - (t-1)$, since an adversary can compromise up to $t-1$ players.
+%Since $t$ honest are needed to reconstruct, this is the same thing as saying $h \ge t\Leftrightarrow h > t-1 \Leftrightarrow n-(t-1) > t-1 \Leftrightarrow n > 2t-2 \Leftrightarrow n/2 > t-1$.
