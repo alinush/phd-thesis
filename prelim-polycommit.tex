@@ -1,4 +1,4 @@
-Most of the results in this thesis are based on \textit{polynomial commitment schemes}~\cite{Feldman87,Pedersen1991NonInteractive,KZG10a,BFS19,ZXZS19}.
+Most of the results in this thesis are based on \textit{polynomial commitment schemes}~\cite{Feldman87,Pedersen1991Non,KZG10a,BFS19,ZXZS19}.
 In \cref{s:aads}, we use constant-sized polynomial commitments~\cite{KZG10a} to build various append-only authenticated data structures.
 In \cref{s:threshcrypto}, we use the same commitments to scale VSS and DKG protocols.
 
@@ -137,12 +137,12 @@ This definition prevents an adversary who gets $\deg{\phi}$ evaluations $(\phi(x
 
 Kate, Zaverucha and Goldberg proposed a constant-sized polynomial commitment scheme based on the $\ell$-S(B)DH assumption (see \cref{def:q-sdh,def:q-sbdh}).
 Importantly, evaluation proofs are constant-sized and constant-time to verify; they do not depend in any way on the degree of the committed polynomial.
-In contrast, both Pedersen-style~\cite{Pedersen1991NonInteractive} and Feldman-style~\cite{Feldman87} commitments are linearly-sized in the degree of the committed polynomial and evaluation proofs take linear time to verify (although the proof size is zero).
+In contrast, both Pedersen-style~\cite{Pedersen1991Non} and Feldman-style~\cite{Feldman87} commitments are linearly-sized in the degree of the committed polynomial and evaluation proofs take linear time to verify (although the proof size is zero).
 To provide succinctness, KZG requires $\ell$-SDH~\cite{BB08} public parameters $\PPsdh_\ell(g;\tau)=(g^{\tau^i})_{i\in[0,\ell]}$ where $\tau$ denotes a trapdoor.
 (These parameters are computed via a \textit{trusted setup}; see \cref{s:prelim:trusted-setup}.)
 Their scheme is computationally-hiding (see \cref{def:polycommit:comp-hiding}) under the discrete log assumption and computationally-binding (see \cref{def:polycommit:poly-binding}) under $\ell$-SDH~\cite{KZG10a}.
 
-Unlike Pedersen commitments~\cite{Pedersen1991NonInteractive}, KZG can only commit to polynomials of degree $d\le \ell$.
+Unlike Pedersen commitments~\cite{Pedersen1991Non}, KZG can only commit to polynomials of degree $d\le \ell$.
 Let $\phi$ denote a polynomial of degree $d$ with coefficients $c_0, c_1, \dots, c_d$ in $\Fp$.
 A KZG commitment to $\phi$ is a single group element $C = \prod_{i=0}^d {\left(g^{\tau^i}\right)^{c_i}} = g^{\sum_{i=0}^d c_i \tau^i} = g^{\phi(\tau)}$.
 Note that committing to $\phi$ takes $\Theta(d)$ time.

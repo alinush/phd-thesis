@@ -40,21 +40,21 @@
 % "A great proportion of solutions to multiparty protocols turns out to be a crux of threshold cryptosystem scheme in constructing a distributed TTP: key recovery [24], signature escrow [15,23], contract signing [27], fair exchange of digital signatures [2], e-voting [9,19] and auction [6] schemes."
 
 Due to the popularity of cryptocurrencies, interest in Byzantine fault tolerant (BFT) systems has been steadily increasing~\cite{bitcoin,ethereum,GAG+19,algorand,dfinity,ouroboros,ouroboros-praos,ouroboros-genesis,randherd}.
-At the core of BFT systems often lie simpler threshold cryptosystems such as threshold signature schemes (TSS)~\cite{Boldyreva03,Shoup00}, verifiable secret sharing (VSS) protocols~\cite{Pedersen1991NonInteractive,CGMA85,KZG10a} and distributed key generation (DKG) protocols~\cite{Pedersen1991AThreshold,GJKR07,Kate2010}.
+At the core of BFT systems often lie simpler threshold cryptosystems such as threshold signature schemes (TSS)~\cite{Boldyreva03,Shoup00}, verifiable secret sharing (VSS) protocols~\cite{Pedersen1991Non,CGMA85,KZG10a} and distributed key generation (DKG) protocols~\cite{Pedersen1991AThreshold,GJKR07,Kate2010}.
 For example, TSS and DKG protocols are used to scale consensus protocols~\cite{GAG+19,dfinity,constantinople}.
 Furthermore, DKG protocols~\cite{GJKR07} are used to securely generate keys for TSS~\cite{KG09}, to generate nonces for interactive TSS~\cite{SS01,GGN16}, and to build proactively-secure threshold cryptosystems~\cite{Herzberg1995ProactiveSecret,Herzberg1997ProactivePublic}.
 Finally, VSS is used to build multi-party computation (MPC) protocols~\cite{GRR98p}, random beacons~\cite{randherd,CD17a,ouroboros} and is the key component of DKG protocols.
 
 Despite their usefulness, TSS, VSS and DKG protocols do not scale well in important settings.
 For example, BFT systems often operate in the \textit{honest majority} setting, with $n$ total players where $t > n/2$ players must be honest.
-In this setting, \textit{$t$-out-of-$n$ threshold cryptosystems}, such as TSS, VSS and DKG, require time quadratic in $n$~\cite{Feldman87,Pedersen1991NonInteractive,KZG10a,Boldyreva03}.
+In this setting, \textit{$t$-out-of-$n$ threshold cryptosystems}, such as TSS, VSS and DKG, require time quadratic in $n$~\cite{Feldman87,Pedersen1991Non,KZG10a,Boldyreva03}.
 This is because of two reasons.
 % Note: At this point, it might not be clear to all readers that threshold cryptosystems reconstruct secrets, so we clarify below.
 First, reconstruction of secrets, a key step in any threshold cryptosystem, is typically implemented naively using $\Theta(t^2)$ time polynomial interpolation, even though faster algorithms exist~\cite{vG13ModernCh10}.
 This makes aggregating threshold signatures and reconstructing VSS or DKG secrets slow for large $t$.
 Second, either the dealing round, the verification round or the reconstruction phase in VSS and DKG protocols require $\Theta(nt)$ time.
 % e.g., Feldman VSS has $\Theta(nt)$ worst-case time to verify shares during reconstruction.
-Fundamentally, this is because current polynomial commitment schemes require $\Theta(nt)$ time to either compute or verify all proofs~\cite{Feldman87,Pedersen1991NonInteractive,KZG10a}.
+Fundamentally, this is because current polynomial commitment schemes require $\Theta(nt)$ time to either compute or verify all proofs~\cite{Feldman87,Pedersen1991Non,KZG10a}.
 In this thesis, we address both of these problems.
 
 \paragraph{Contributions.}

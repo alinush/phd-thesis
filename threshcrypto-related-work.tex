@@ -27,7 +27,7 @@ Still, due to its $\Omega(t)$ size, an MSS does not always scale.
 \label{s:related-work:vss}
 VSS protocols were introduced by Chor et al.~\cite{CGMA85}.
 Feldman proposed the first efficient, non-interactive VSS with computational hiding and information-theoretic binding~\cite{Feldman87}.
-Pedersen introduced its counterpart with information-theoretic hiding and computational binding~\cite{Pedersen1991NonInteractive}.
+Pedersen introduced its counterpart with information-theoretic hiding and computational binding~\cite{Pedersen1991Non}.
 Both schemes require a $\Theta(t)$-sized broadcast during dealing.
 
 Kate et al.'s \evss reduced this to $\Theta(1)$ using constant-sized polynomial commitments~\cite{KZG10a}.
@@ -53,7 +53,7 @@ Nonetheless, our \ourvss protocol can be easily modified into a PVSS since an AM
 % Note: First person to pose the DKG question was C. Meadows in "Some Threshold Schemes Without Central Key Distributors", in CRYPTO 1988 (I think) or in "Congressus Numerantium, 46, 1985, pp. 187-199." but cannot find the paper online.
 \subsection{Distributed Key Generation (DKG)}
 \label{s:related-work:dkg}
-DKG protocols were introduced by Ingemarsson and Simmons~\cite{Ingemarsson1991} and subsequently improved by Pedersen ~\cite{Pedersen1991AThreshold,Pedersen1991NonInteractive}.
+DKG protocols were introduced by Ingemarsson and Simmons~\cite{Ingemarsson1991} and subsequently improved by Pedersen ~\cite{Pedersen1991AThreshold,Pedersen1991Non}.
 Gennaro et al.~\cite{GJKR07} noticed that if players in Pedersen's DKG refuse to deal~\cite{Pedersen1991AThreshold}, they cannot be provably blamed and fixed this in their new \jfdkg protocol.
 They also showed that secrets produced by Pedersen's DKG can be \textit{biased}, and fixed this in their \newdkg protocol.
 % Note: Gennaro's unbiasable New-DKG with Pedersen commitments can be made more efificient (one less round, I think) by changing the reconstruction of $y=g^z_i$ to use proofs-of-knowledge~\cite{Canetti1999Adaptive}.

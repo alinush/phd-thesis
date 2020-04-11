@@ -68,7 +68,7 @@ Then, he computes the secret as $s = \phi(0) = \sum_{i\in T} \Ell_i^T(0) s_i$ vi
 % Q: What if dealer picks polynomial of degree t or higher? Then different subsets of t players will reconstruct different secrets.
 % A: Dealer can't do this because of the $(t-1)$-polyDH assumption.
 Unfortunately, SSS does not tolerate malicious dealers who distribute invalid shares, nor malicious players who might send invalid shares during reconstruction.
-To deal with this, \textit{Verifiable Secret Sharing (VSS)} protocols enable players to verify shares from a potentially-malicious dealer~\cite{CGMA85,Feldman87,Pedersen1991NonInteractive,KZG10a}.
+To deal with this, \textit{Verifiable Secret Sharing (VSS)} protocols enable players to verify shares from a potentially-malicious dealer~\cite{CGMA85,Feldman87,Pedersen1991Non,KZG10a}.
 Furthermore, VSS also enables the reconstructor to verify the shares before interpolating the (wrong) secret.
 
 Loosely speaking, VSS protocols must offer two properties against any adversary who compromises the dealer and $<t$ players: \textit{secrecy} and \textit{correctness}.
@@ -86,7 +86,7 @@ We refer the reader to~\cite{KZG10a} for more formal VSS definitions. %, since o
 
 \subsection{Kate et al.'s \evss}
 \label{s:prelim:evss}
-At a high-level, \evss follows the style of previous VSS protocols~\cite{Feldman87,Pedersen1991NonInteractive}.
+At a high-level, \evss follows the style of previous VSS protocols~\cite{Feldman87,Pedersen1991Non}.
 In the \textit{dealing round}, the dealer commits to $\phi$ and sends each player their share and \textit{proof} that their share is correct.
 In the \textit{verification round}, each player verifies the proof for his share and, if incorrect, broadcasts a \textit{complaint}.
 Finally, in the \textit{complaint round}, the dealer resolves complaints (if any) by broadcasting the correct share of each complaining player.

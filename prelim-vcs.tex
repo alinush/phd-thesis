@@ -34,7 +34,7 @@ Deterministic algorithm that returns a vector commitment $c$ to the sequence $(m
 Deterministic algorithm that returns a proof $\pi_i$ that $m_i$ is the $i$th message in the vector.
 
 \api $\vcverify(\vk, c, m, i, \pi_i) \rightarrow T/F$.
-Deterministic algorithm that verifies the proof $\pi_i$ that $c$ commits to some sequence $m_1, ..., m_q$ where $m_i = m$.
+Deterministic algorithm that verifies the proof $\pi_i$ that $c$ commits to some sequence $m_1, \dots, m_\ell$ where $m_i = m$.
 
 \api $\vcupdate(\pp, c, m, m', j)\rightarrow c'$.
 Deterministic algorithm that returns a new commitment $c'$ to the vector committed in $c$, except its $j$th message is changed from $m$ to $m'$.
