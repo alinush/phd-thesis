@@ -119,14 +119,21 @@ $\forall$ adversaries \Adv running in time $\poly(\lambda)$,
 \begin{align*}
 \Pr \left[ \begin{array}{c}
     (\pp,\vk) \leftarrow \setup(1^\lambda, \upperbound)\\
-    (d_i,d_j,i<j,\pi_a, k,V\ne V',\pi,\pi') \leftarrow \Adv(1^\lambda, \pp, \vk)
+    (d_i,d_j,i<j,\pi_a, k,V,V',\pi,\pi') \leftarrow \Adv(1^\lambda, \pp, \vk)
     : \\
     {\verappendonly(\vk, d_i, i, d_j, j, \pi_a) = T} \wedge {}\\
     {\verlookup(\vk, d_i, k, V , \pi )  = T} \wedge {}\\
-    {\verlookup(\vk, d_j, k, V', \pi') = T}
+    {\verlookup(\vk, d_j, k, V', \pi') = T}\wedge {}\\
+    {V\not\subset V' \wedge V\ne V'}
 \end{array} \right] \le \negl(\lambda)
 \end{align*}
 \end{definition}
+
+% NOTE: In an earlier version, we forgot to restrict that V \not\subset V' in addition to V\ne V'.
+% Without the subset restriction, V\ne V' would mean normal appends are counted as "append-only breaks": e.g., a valid append of a new value v_2 to a key k, would go from a set V = {v_1} of values to a larger set V' = {v_1, v_2} with V\ne V'.
+%
+% Instead, what we want is to guarantee that either the old set of values V be a subset of the new ones V', or that V = V'.
+% In other words, if V \not\subset V' and V \ne V', then the append-only property was broken
 
 \noindent \textit{Observation:}
 This definition ensures that values can only be added to a key and can never be removed nor changed.
